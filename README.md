@@ -17,8 +17,8 @@ processors, no bytecode weaving. Works with any Spring Boot 3.x project.
 Clone this repository, then install it to your local Maven repository:
 
 ```bash
-git clone <repo-url>
-cd java-ai
+git clone git@github.com:makibytes/spring-boot-aigent.git
+cd spring-boot-aigent
 mvn install
 ```
 
@@ -28,7 +28,7 @@ In your Spring Boot project's `pom.xml`:
 
 ```xml
 <dependency>
-    <groupId>com.aigent</groupId>
+    <groupId>de.makibytes.aigent</groupId>
     <artifactId>aigent-spring-boot-starter</artifactId>
     <version>1.0.0-SNAPSHOT</version>
 </dependency>
@@ -41,7 +41,7 @@ That's it. No `@Enable*` annotation needed — auto-configuration activates auto
 Write the spec, mark the method as a stub, and leave the body throwing `UnsupportedOperationException`:
 
 ```java
-import com.aigent.*;
+import de.makibytes.aigent.*;
 import org.springframework.stereotype.Service;
 import java.util.List;
 

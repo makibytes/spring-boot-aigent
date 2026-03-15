@@ -1,4 +1,6 @@
-package com.aigent;
+package de.makibytes.aigent;
+
+import de.makibytes.aigent.autoconfigure.StubDetector;
 
 import java.lang.annotation.*;
 
@@ -19,7 +21,7 @@ import java.lang.annotation.*;
  *   <li>Neither present → Done: human-authored or accepted.
  * </ul>
  *
- * <p><b>At startup</b>, {@link com.aigent.autoconfigure.StubDetector} will log a warning
+ * <p><b>At startup</b>, {@link StubDetector} will log a warning
  * (or throw, if {@code aigent.on-stub=FAIL}) for every Spring bean method still carrying
  * this annotation — catching unimplemented stubs before they reach production.
  */

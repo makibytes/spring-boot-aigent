@@ -1,4 +1,4 @@
-package com.aigent.autoconfigure;
+package de.makibytes.aigent.autoconfigure;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 

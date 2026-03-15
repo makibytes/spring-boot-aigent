@@ -1,4 +1,4 @@
-package com.aigent;
+package de.makibytes.aigent;
 
 /**
  * The AI's confidence level in its implementation, used in {@link AiNote}.

@@ -1,7 +1,5 @@
 package com.aigent.benchmark.semver;
 
-import com.aigent.*;
-
 /**
  * Aigent spec for SemVerComparatorImpl following SemVer 2.0.0 precisely.
  * Implement the @Stub method. All edge cases are specified in @Example.

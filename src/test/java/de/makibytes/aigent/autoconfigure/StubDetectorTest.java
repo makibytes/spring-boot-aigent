@@ -1,7 +1,7 @@
-package com.aigent.autoconfigure;
+package de.makibytes.aigent.autoconfigure;
 
-import com.aigent.Intent;
-import com.aigent.Stub;
+import de.makibytes.aigent.Intent;
+import de.makibytes.aigent.Stub;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;

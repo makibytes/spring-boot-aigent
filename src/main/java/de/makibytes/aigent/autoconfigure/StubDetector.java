@@ -1,6 +1,6 @@
-package com.aigent.autoconfigure;
+package de.makibytes.aigent.autoconfigure;
 
-import com.aigent.Stub;
+import de.makibytes.aigent.Stub;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.SmartInitializingSingleton;

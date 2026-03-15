@@ -1,7 +1,5 @@
 package com.aigent.benchmark.expression;
 
-import com.aigent.*;
-
 /**
  * Aigent spec for ExpressionEvaluatorImpl.
  * Implement the @Stub method. The annotations define the contract precisely.

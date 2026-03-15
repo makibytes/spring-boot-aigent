@@ -1,4 +1,4 @@
-package com.aigent;
+package de.makibytes.aigent;
 
 import org.junit.jupiter.api.Test;
 
