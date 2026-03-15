@@ -226,12 +226,35 @@ produced correct implementations on the first try.
 > See the full results with per-model tables, failure analysis, and timing data:
 > **[benchmark/results/results.md](benchmark/results/results.md)**
 
+### Round 2 — harder dev-tooling problems
+
+We repeated the tournament on **3 more complex software-engineering problems**:
+
+- deterministic dependency resolution (topological sort with alphabetical tie-breaking, cycle/missing-node detection)
+- simplified gitignore matching (`*`, `**`, root anchoring, directory patterns, negation, last-match-wins)
+- unified diff application (hunk parsing, context validation, empty originals, null contracts)
+
+The pattern holds — and is actually sharper on harder problems:
+
+| Approach | Score | Pass rate |
+|----------|------:|----------:|
+| **aigent**   | **90/90** | **100%** |
+| one-shot | 80/90 | 89% |
+
+Every one-shot failure traces directly to a constraint that was spelled out in the aigent spec
+but absent from the plain-language prompt: a wrong exception type (`IAE` vs `NPE`), silent
+`null` acceptance, a missed `oldStart=0` edge case, or a missed path-normalisation example.
+Aigent got all of them right on the first try.
+
+> See the full complex-problem tournament with per-model tables, failure analysis, and timing:
+> **[benchmark/results/complex-results.md](benchmark/results/complex-results.md)**
+
 ---
 
 ## Project Layout
 
 ```
-src/main/java/com/aigent/
+src/main/java/de/makibytes/aigent/
 ├── Intent.java            @Intent annotation
 ├── Contract.java          @Contract annotation
 ├── Example.java           @Example annotation (repeatable)

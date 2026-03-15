@@ -1,0 +1,16 @@
+Implement a Java class called DependencyResolverImpl in package com.aigent.benchmark.deps that implements the following interface:
+
+    import java.util.List;
+    import java.util.Map;
+    import java.util.Set;
+
+    public interface DependencyResolver {
+        List<String> resolve(Map<String, Set<String>> dependencies);
+    }
+
+The resolve method should return a deterministic installation order for the dependency graph.
+Each package must appear after all of its dependencies.
+If multiple packages are ready at the same time, use alphabetical order.
+Throw IllegalArgumentException for invalid graphs such as cycles or missing dependencies.
+
+Output only the complete Java source file. No explanation.

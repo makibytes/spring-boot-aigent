@@ -1,0 +1,14 @@
+Implement a Java class called GitIgnoreMatcherImpl in package com.aigent.benchmark.gitignore that implements the following interface:
+
+    import java.util.List;
+
+    public interface GitIgnoreMatcher {
+        boolean shouldIgnore(List<String> patterns, String path, boolean directory);
+    }
+
+The method should evaluate simplified gitignore-style patterns.
+Support comments and blank lines, ! negation, leading / for root-anchored patterns,
+trailing / for directory patterns, * within one path segment, ** across directories,
+and "last matching pattern wins" semantics.
+
+Output only the complete Java source file. No explanation.

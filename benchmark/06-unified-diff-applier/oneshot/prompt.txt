@@ -1,0 +1,12 @@
+Implement a Java class called UnifiedDiffApplierImpl in package com.aigent.benchmark.diff that implements the following interface:
+
+    public interface UnifiedDiffApplier {
+        String apply(String original, String unifiedDiff);
+    }
+
+The method should apply a simplified unified diff to the original text.
+Support optional file header lines starting with --- and +++, hunk headers like
+@@ -oldStart,oldCount +newStart,newCount @@, and hunk body lines starting with space, -, or +.
+Throw IllegalArgumentException when the diff is malformed or does not apply cleanly.
+
+Output only the complete Java source file. No explanation.
