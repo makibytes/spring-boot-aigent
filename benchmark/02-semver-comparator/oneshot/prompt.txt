@@ -1,0 +1,10 @@
+Implement a Java class called SemVerComparatorImpl in package com.aigent.benchmark.semver that implements the following interface:
+
+    public interface SemVerComparator extends java.util.Comparator<String> {
+        int compare(String v1, String v2);
+    }
+
+The compare method should compare two semantic version strings.
+Return negative if v1 < v2, zero if equal, positive if v1 > v2.
+
+Output only the complete Java source file. No explanation.

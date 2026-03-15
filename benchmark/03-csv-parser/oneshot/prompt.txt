@@ -1,0 +1,9 @@
+Implement a Java class called CsvParserImpl in package com.aigent.benchmark.csv that implements the following interface:
+
+    public interface CsvParser {
+        java.util.List<java.util.List<String>> parse(String csv);
+    }
+
+The parse method should parse a CSV string and return a list of rows, where each row is a list of field strings.
+
+Output only the complete Java source file. No explanation.

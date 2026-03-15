@@ -1,0 +1,10 @@
+Implement a Java class called ExpressionEvaluatorImpl in package com.aigent.benchmark.expression that implements the following interface:
+
+    public interface ExpressionEvaluator {
+        double evaluate(String expression);
+    }
+
+The evaluate method should parse and compute a mathematical expression string.
+Supported operators: +, -, *, /, ^ and parentheses.
+
+Output only the complete Java source file. No explanation.
