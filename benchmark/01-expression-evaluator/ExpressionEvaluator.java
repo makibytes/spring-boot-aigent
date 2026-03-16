@@ -1,4 +1,4 @@
-package com.aigent.benchmark.expression;
+package de.makibytes.benchmark.expression;
 
 /**
  * Evaluates a mathematical expression string.

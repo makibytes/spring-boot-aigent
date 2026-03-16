@@ -1,4 +1,4 @@
-package com.aigent.benchmark.deps;
+package de.makibytes.benchmark.deps;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -24,7 +24,7 @@ class DependencyResolverTest {
     @BeforeEach
     void setUp() throws Exception {
         resolver = (DependencyResolver) Class
-                .forName("com.aigent.benchmark.deps.DependencyResolverImpl")
+                .forName("de.makibytes.benchmark.deps.DependencyResolverImpl")
                 .getDeclaredConstructor()
                 .newInstance();
     }

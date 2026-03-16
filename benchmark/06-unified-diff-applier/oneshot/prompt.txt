@@ -1,4 +1,4 @@
-Implement a Java class called UnifiedDiffApplierImpl in package com.aigent.benchmark.diff that implements the following interface:
+Implement a Java class called UnifiedDiffApplierImpl in package de.makibytes.benchmark.diff that implements the following interface:
 
     public interface UnifiedDiffApplier {
         String apply(String original, String unifiedDiff);

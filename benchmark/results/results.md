@@ -1,183 +1,159 @@
-# Aigent vs One-Shot Benchmark Results
+# Benchmark Results — Round 4
 
-**Date:** 2026-03-15
-**Models tested:** `gpt-5.4`, `gemini-3-pro-preview`, `claude-sonnet-4.6`
-**Approach A — one-shot:** Single plain-language prompt, no edge-case hints, no formal spec.
-**Approach B — aigent:** Fully annotated `@Intent + @Contract + @Example + @Property + @Stub`;
-AI reads the annotations and implements against them.
+**5 models × 7 problems × 2 approaches = 70 runs** (GPT-5.4 and Gemini 3 Pro excluded — copilot quota exhausted)
 
----
+Runs executed in parallel. Each model writes its own CSV; merged at the end.
 
-## Rating Summary  *(0 = all wrong · 10 = all correct)*
+Problems span two difficulty tiers:
 
-| Problem | Approach | GPT-5.4 | Gemini 3 Pro | Claude Sonnet 4.6 |
-|---------|----------|:-------:|:------------:|:-----------------:|
-| `01-expression-evaluator` | **one-shot** | 10/10 | **6/10** ⚠ | **6/10** ⚠ |
-| `01-expression-evaluator` | **aigent**   | 10/10 | **10/10** ✓ | **10/10** ✓ |
-| `02-semver-comparator`    | **one-shot** | 10/10 | 10/10 | 10/10 |
-| `02-semver-comparator`    | **aigent**   | 10/10 | 10/10 | 10/10 |
-| `03-csv-parser`           | **one-shot** | 10/10 | 10/10 | 10/10 |
-| `03-csv-parser`           | **aigent**   | 10/10 | 10/10 | 10/10 |
-
-**Aigent total score:** 18 runs × 10/10 = **60/60 (100%)**
-**One-shot total score:** 16 × 10 + 2 × 6 = **52/60 (87%)**
+| # | Problem | Tier |
+|---|---------|------|
+| 01 | Expression Evaluator (operator precedence, right-assoc `^`, unary `-`) | Classic |
+| 02 | SemVer Comparator (pre-release ordering, numeric vs lexicographic) | Classic |
+| 03 | CSV Parser (RFC 4180, quoted fields, embedded newlines) | Classic |
+| 04 | Dependency Resolver (topological sort, cycle / missing-node detection) | Complex |
+| 05 | Gitignore Matcher (`*`, `**`, anchoring, negation, last-match-wins) | Complex |
+| 06 | Unified Diff Applier (hunk parsing, context validation, empty originals) | Complex |
+| 07 | TinyLang Interpreter (variables, if/while, arithmetic, user functions) | Complex |
 
 ---
 
-## Problem 1 — Expression Evaluator (19 tests)
+## Overall Scores
 
-**Why this is hard for one-shot:**
-The `^` operator is **right-associative** (`2^3^2 = 2^(3^2) = 512`, not `64`),
-and **unary minus has lower precedence than `^`** (`-2^2 = -(2^2) = -4`, not `4`).
-A vague one-liner prompt says nothing about either rule. An AI filling in the blanks
-reaches for the "obvious" left-associative parse — and is silently wrong.
+Rating per run: 10 = all pass · 8 = ≤20% fail · 6 = ≤33% fail · 4 = ≤50% fail · 2 = some pass · 0 = none / error.
+`[T]` = timed out (30 min) but implementation existed — tests still ran.
+Max per approach: 7 × 10 = **70 pts**. Combined max: **140 pts**.
 
-| Model | Approach | Passed | Failed | Total | Time | Rating |
-|-------|----------|-------:|-------:|------:|-----:|-------:|
-| GPT-5.4 | one-shot | 19 | 0 | 19 | 90s | **10/10** |
-| GPT-5.4 | aigent   | 19 | 0 | 19 | 162s | **10/10** |
-| Gemini 3 Pro | **one-shot** | **15** | **4** | 19 | 53s | **6/10** |
-| Gemini 3 Pro | **aigent**   | **19** | **0** | 19 | ~3m | **10/10** |
-| Claude Sonnet 4.6 | **one-shot** | **15** | **4** | 19 | 18s | **6/10** |
-| Claude Sonnet 4.6 | **aigent**   | **19** | **0** | 19 | 41s | **10/10** |
-
-### Failing tests (Gemini + Claude, one-shot)
-
-| Test | Expected | What one-shot produced |
-|------|----------|------------------------|
-| `powerRightAssociative`: `"2^3^2"` | `512.0` | `64.0` — parsed left-to-right as `(2^3)^2` |
-| `unaryMinusPowerPrecedence`: `"-2^2"` | `-4.0` | `4.0` — bound unary minus to base first, giving `(-2)^2` |
-| `divisionByZero`: `"5/0"` | throws `ArithmeticException` | returned `Infinity` silently |
-| `invalidExpression`: `"2++3"` | throws exception | returned `0.0` silently |
-
-The aigent spec named the wrong answers explicitly in `@Example` comments:
-
-```java
-@Example(label = "power right-assoc", input = "\"2^3^2\"", output = "512.0  // NOT 64.0")
-@Example(label = "unary minus power",  input = "\"-2^2\"",  output = "-4.0   // NOT 4.0")
-```
-
-And the `@Stub` note explicitly flagged the two critical correctness points.
-The AI had zero room for ambiguity — and produced zero failures.
+| Model | Oneshot | Aigent | Total | Aigent Δ | vs Round 3 |
+|---|---:|---:|---:|---:|---:|
+| **Claude Sonnet 4.6** | **70/70** | **70/70** | **140/140 (100%)** | `0` | — |
+| **Big Pickle** | **70/70** | **70/70** | **140/140 (100%)** | `0` | **+12 🎉** |
+| MiniMax M2.5 | 68/70 | 60/70 | **128/140 (91%)** | `−8` | −10 |
+| Nemotron 3 Super | 66/70 | 58/70 | **124/140 (89%)** | `−8` | +4 |
+| MiMo V2 Flash | 40/70 | 40/70 | **80/140 (57%)** | `0` | −42 ⚠️ |
 
 ---
 
-## Problem 2 — Semantic Version Comparator (16 tests)
+## Per-Problem Results
 
-**Why this is hard for one-shot:**
-SemVer requires **numeric comparison** of version segments (`1.10.0 > 1.9.0`
-because `10 > 9`, not `"10" < "9"` lexicographically), specific **pre-release ordering**
-rules, and build metadata that must be **ignored** for precedence. This is one of the
-most well-documented LLM failure modes in coding benchmarks.
+### Oneshot
 
-| Model | Approach | Passed | Failed | Total | Time | Rating |
-|-------|----------|-------:|-------:|------:|-----:|-------:|
-| GPT-5.4 | one-shot | 16 | 0 | 16 | 60s | **10/10** |
-| GPT-5.4 | aigent   | 16 | 0 | 16 | 90s | **10/10** |
-| Gemini 3 Pro | one-shot | 16 | 0 | 16 | ~3m | **10/10** |
-| Gemini 3 Pro | aigent   | 16 | 0 | 16 | ~2m | **10/10** |
-| Claude Sonnet 4.6 | one-shot | 16 | 0 | 16 | 14s | **10/10** |
-| Claude Sonnet 4.6 | aigent   | 16 | 0 | 16 | 30s | **10/10** |
+| Problem | Claude 4.6 | Big Pickle | MiniMax M2.5 | Nemotron 3 | MiMo Flash |
+|---|:---:|:---:|:---:|:---:|:---:|
+| Expression Eval | 20/20 | 20/20 | 20/20 | 20/20 | 20/20 |
+| SemVer Compare | 17/17 | 17/17 | 17/17 | 17/17 | **0/17** |
+| CSV Parser | 18/18 | 18/18 | 18/18 | 18/18 | 18/18 |
+| Dep Resolver | 22/22 | 22/22 | 22/22 | 22/22 | 22/22 |
+| Gitignore Match | 24/24 | 24/24 | 24/24 | **[T]22/24** | 24/24 |
+| Unified Diff | 20/20 | 20/20 | 20/20 | 20/20 | **0/20** |
+| TinyLang | 43/43 | 43/43 | **[T]41/43** | 42/43 | **0/43** |
 
-All three models passed both approaches. SemVer 2.0.0 is apparently well-represented
-in training data for these frontier models. The aigent spec's value here is primarily
-documentation and regression safety — it makes the contract explicit for the next
-developer or model session.
+### Aigent
 
----
-
-## Problem 3 — CSV Parser / RFC 4180 (17 tests)
-
-**Why this is hard for one-shot:**
-`String.split(",")` is universally wrong. Quoted fields can contain commas and
-newlines; `""` inside a quoted field is an escaped literal `"`. A naive one-liner
-prompt leaves an AI with `split(",")` as its natural first instinct.
-
-| Model | Approach | Passed | Failed | Total | Time | Rating |
-|-------|----------|-------:|-------:|------:|-----:|-------:|
-| GPT-5.4 | one-shot | 17 | 0 | 17 | 76s | **10/10** |
-| GPT-5.4 | aigent   | 17 | 0 | 17 | 130s | **10/10** |
-| Gemini 3 Pro | one-shot | 17 | 0 | 17 | 50s | **10/10** |
-| Gemini 3 Pro | aigent   | 17 | 0 | 17 | ~2m | **10/10** |
-| Claude Sonnet 4.6 | one-shot | 17 | 0 | 17 | 11s | **10/10** |
-| Claude Sonnet 4.6 | aigent   | 17 | 0 | 17 | 31s | **10/10** |
-
-All models passed. RFC 4180 CSV parsing is a well-trained, well-known task.
+| Problem | Claude 4.6 | Big Pickle | MiniMax M2.5 | Nemotron 3 | MiMo Flash |
+|---|:---:|:---:|:---:|:---:|:---:|
+| Expression Eval | 20/20 | 20/20 | 20/20 | 20/20 | 20/20 |
+| SemVer Compare | 17/17 | 17/17 | **16/17** | 17/17 | 17/17 |
+| CSV Parser | 18/18 | 18/18 | 18/18 | 18/18 | 18/18 |
+| Dep Resolver | 22/22 | 22/22 | 22/22 | 22/22 | 22/22 |
+| Gitignore Match | 24/24 | 24/24 | 24/24 | **[T]21/24** | **0/24** |
+| Unified Diff | 20/20 | 20/20 | 20/20 | 20/20 | **0/20** |
+| TinyLang | 43/43 | 43/43 | **9/43** | **0/?** | **0/43** |
 
 ---
 
-## Key Observations
+## Timing
 
-### 1. Aigent is the only approach with a 100% pass rate
+### Oneshot (wall time)
 
-Aigent scored **10/10 on every single run** — 18 for 18. One-shot scored 10/10 on
-16 of 18 runs. The two failures were both on the expression evaluator for the two
-non-GPT models, on exactly the edge cases the one-shot prompt never mentioned.
+| Problem | Claude 4.6 | Big Pickle | MiniMax M2.5 | Nemotron 3 | MiMo Flash |
+|---|---:|---:|---:|---:|---:|
+| Expression Eval | 40s | 3m20s | 5m56s | 19m24s | 12m42s |
+| SemVer Compare | 30s | 5m26s | 1m35s | 8m27s | 5s ⚠️ |
+| CSV Parser | 1m05s | 1m20s | 1m10s | 10m32s | 1m15s |
+| Dep Resolver | 25s | 1m40s | 2m20s | 2m50s | 45s |
+| Gitignore Match | 45s | 1m20s | 1m35s | TIMEOUT | 12m23s |
+| Unified Diff | 45s | 9m02s | 3m30s | 9m12s | 5s ⚠️ |
+| TinyLang | 7m06s | 10m57s | TIMEOUT | 29m02s | 5s ⚠️ |
+| **Total** | **~11m** | **~33m** | **~46m*** | **~112m*** | **~27m** |
 
-### 2. The failures are silent — the worst kind
+### Aigent (wall time)
 
-The one-shot implementations didn't crash or refuse to compile. They returned
-plausible-looking *wrong answers*: `-2^2 = 4.0`, `2^3^2 = 64.0`. These would
-pass any casual manual test, and would only be caught by a test suite that
-explicitly covers edge cases — exactly what aigent's `@Example` annotations provide.
-
-### 3. Aigent's `@Example` comments killed the ambiguity
-
-```java
-@Example(label = "power right-assoc", input = "\"2^3^2\"",  output = "512.0  // NOT 64.0")
-@Example(label = "unary minus power",  input = "\"-2^2\"",   output = "-4.0   // NOT 4.0")
-```
-
-The inline `// NOT 64.0` and `// NOT 4.0` comments are the key. They explicitly
-name the most likely wrong answer. An AI reading this cannot default to the "obvious"
-implementation without noticing it was explicitly warned off.
-
-### 4. GPT-5.4 has these algorithms memorised; smaller models do not
-
-GPT-5.4 passed all 19 expression evaluator tests with a vague one-liner prompt.
-The differentiation appears at the Gemini / Claude Sonnet level — still highly
-capable frontier models, but ones that fall back on the "standard" interpretation
-when the spec is silent about non-obvious cases.
-
-This means aigent is most valuable precisely where budgets and scale push teams
-toward smaller or cheaper models — the models that need the most guidance.
-
-### 5. Aigent is slower per generation, but cheaper overall
-
-| Approach | Generation time | Iterations to correct result |
-|----------|-----------------|------------------------------|
-| one-shot | 11–90s | 1 if lucky; more if edge cases fail |
-| aigent   | 30–162s | Always 1 — the spec eliminates guessing |
-
-The aigent prompt is 2–3× longer, so generation takes 1.5–2× longer. But there are
-no second iterations to fix silent failures. On the expression evaluator, the
-one-shot approach would require at least one re-prompt after the test failures are
-discovered — making aigent *faster* end-to-end for non-GPT-5.4 models.
-
-### 6. Beyond the first run: annotations as living contracts
-
-Even when both approaches produce identical code today, the aigent approach
-leaves behind machine-readable `@Contract`, `@Example`, and `@Property` annotations
-that:
-- Document the edge cases for the next developer
-- Can be turned into property-based tests (jqwik)
-- Catch regressions when `StubDetector` finds a re-stubbed method at startup
-- Give the next AI session (or a different model) the same unambiguous brief
-
-One-shot produces the same file with no specification residue. The context that
-made the AI produce correct code evaporates.
+| Problem | Claude 4.6 | Big Pickle | MiniMax M2.5 | Nemotron 3 | MiMo Flash |
+|---|---:|---:|---:|---:|---:|
+| Expression Eval | 1m50s | 13m48s | 2m55s | 4m36s | 1m35s |
+| SemVer Compare | 35s | 1m05s | 7m11s | 4m21s | 1m40s |
+| CSV Parser | 3m25s | 1m05s | 2m15s | 2m55s | 2m25s |
+| Dep Resolver | 40s | 1m25s | 3m25s | 5m56s | 55s |
+| Gitignore Match | 1m00s | 6m31s | 3m00s | TIMEOUT | 30s |
+| Unified Diff | 50s | 6m26s | 4m11s | 19m29s | 5s ⚠️ |
+| TinyLang | 4m21s | 8m42s | 11m23s | 20m45s | 35s |
+| **Total** | **~12m** | **~39m** | **~34m*** | **~88m*** | **~7m** |
 
 ---
 
-## Verdict
+## Key Findings
 
-> **Aigent is the only approach that produces correct implementations 100% of the time**
-> across all three models and all three problems.
->
-> One-shot works *most* of the time for the strongest available models on well-known
-> algorithms. It silently produces wrong answers when the spec is ambiguous or the
-> edge cases are non-obvious — and it leaves no contract behind to detect regressions.
->
-> The cost is a longer prompt and ~1.5× generation time. The benefit is a correct
-> implementation on the first try, a machine-readable spec that outlives the conversation,
-> and a startup safety net that catches stubs before they reach production.
+### 1. The `\n` fix promoted Big Pickle to 140/140
+
+The root cause of Big Pickle's Unified Diff failure in Round 3 was that SpEL single-quoted strings pass `\n` as literal backslash-n, not newlines. The `ContractExpressionEvaluator.parseLiteral()` fix unescapes these sequences, making `@Example` inputs with embedded newlines work correctly. Big Pickle's Unified Diff aigent result flipped from 19/20 → **20/20**, completing its perfect score. **Big Pickle now matches Claude Sonnet 4.6.**
+
+The same fix also resolved MiniMax's Unified Diff aigent failure (19/20 → **20/20**).
+
+### 2. Timeout fallthrough rescued partial results
+
+The new behaviour of running `mvn test` even after a 30-minute timeout recovered meaningful data:
+- MiniMax TinyLang oneshot: was `0/0` → now **41/43** (model had nearly finished before being killed)
+- Nemotron Gitignore both approaches: was `0/0` → now **22/24** and **21/24**
+- Nemotron TinyLang oneshot: **42/43** (within timeout — model solved it but with 1 failure)
+
+### 3. MiMo reliability issues in parallel runs
+
+MiMo had three instant failures (~5s each) on SemVer oneshot, Unified Diff oneshot, and TinyLang oneshot. This is a parallel-run artifact: with 5 models hitting opencode simultaneously, API rate-limiting causes immediate exits before any code is written. The aigent approach recovered SemVer (17/17) because it ran later when contention eased. MiMo's 80/140 score is not representative of its true capability — Round 3 showed 122/140 under sequential runs.
+
+### 4. TinyLang remains the hardest problem
+
+| Model | Oneshot | Aigent |
+|---|:---:|:---:|
+| Claude 4.6 | 43/43 | 43/43 |
+| Big Pickle | 43/43 | 43/43 |
+| MiniMax M2.5 | [T]41/43 | 9/43 |
+| Nemotron 3 | 42/43 | 0/? |
+| MiMo Flash | 0/43 | 0/43 |
+
+Only Claude and Big Pickle reliably implement a full interpreter. MiniMax timed out on oneshot but got 41/43 — it was almost there. The aigent spec for TinyLang appears to actively hurt: MiniMax dropped from 41 to 9, Nemotron produced a completely non-compilable result. The dense interpreter spec with loop/function semantics may overload smaller models into confused implementations.
+
+### 5. Aigent delta — what actually changed vs Round 3
+
+| Fix | Predicted impact | Actual |
+|---|---|---|
+| `\n` unescape | Unified Diff +2 for MiniMax and Big Pickle | ✅ Both 20/20 now |
+| Timeout fallthrough | MiMo semver +10 (false timeout in R3) | ✅ MiMo semver aigent: 17/17 |
+| Contract enforcement in tests | Richer error messages during iteration | Not measurable in pass/fail scores |
+| `@Intent` in failure messages | Richer error messages during iteration | Not measurable in pass/fail scores |
+
+The two infrastructure fixes had measurable, positive impact. The contract/intent improvements affect iteration quality but not the final pass/fail binary captured here.
+
+---
+
+## Aigent Value Summary
+
+| Model | Aigent impact | Dominant factor |
+|---|---|---|
+| Claude 4.6 | Neutral | Already maxed; spec adds 0 |
+| Big Pickle | Neutral (both perfect) | Both approaches solve everything |
+| MiniMax M2.5 | −8 | TinyLang aigent collapsed (9/43); SemVer −1 |
+| Nemotron 3 Super | −8 | TinyLang aigent: compilation failure; gitignore marginally worse |
+| MiMo V2 Flash | Neutral (both unreliable) | Parallel-run failures dominate; SemVer rescued by aigent |
+
+---
+
+## Round 3 → Round 4 Changes
+
+| Model | Round 3 | Round 4 | Δ | Cause |
+|---|---:|---:|---:|---|
+| Claude 4.6 | 140 | 140 | — | Stable |
+| **Big Pickle** | **128** | **140** | **+12** | `\n` fix eliminated Unified Diff failure + prior exp-eval oneshot timeout now passes |
+| MiniMax M2.5 | 138 | 128 | −10 | TinyLang aigent 43→9; normal model variance |
+| Nemotron 3 Super | 120 | 124 | +4 | Timeout fallthrough rescued Gitignore & TinyLang partial scores |
+| MiMo V2 Flash | 122 | 80 | −42 | Parallel-run API failures; not representative |

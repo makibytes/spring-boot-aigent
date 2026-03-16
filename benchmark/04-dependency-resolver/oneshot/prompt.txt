@@ -1,4 +1,4 @@
-Implement a Java class called DependencyResolverImpl in package com.aigent.benchmark.deps that implements the following interface:
+Implement a Java class called DependencyResolverImpl in package de.makibytes.benchmark.deps that implements the following interface:
 
     import java.util.List;
     import java.util.Map;

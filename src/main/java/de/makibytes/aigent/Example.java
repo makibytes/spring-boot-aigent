@@ -22,7 +22,24 @@ import java.lang.annotation.*;
 @Documented
 public @interface Example {
     String input();
-    String output();
+
+    /**
+     * Expected return value as a SpEL literal (e.g. {@code "5.0"}, {@code "{'a','b'}"}, {@code "true"}).
+     * Leave empty when {@link #throws_()} is set.
+     */
+    String output() default "";
+
+    /**
+     * Expected exception type when the input should cause the method to throw.
+     * When set, {@link #output()} is ignored and the runner verifies an exception of this type is thrown.
+     * Default {@code NoException.class} means no exception is expected.
+     */
+    Class<? extends Throwable> throws_() default Example.NoException.class;
+
+    /** Sentinel: no exception expected. Do not use directly — use the default. */
+    final class NoException extends RuntimeException {
+        private NoException() {}
+    }
 
     /** Optional human-readable name for this case, e.g. "empty list" or "already normalized". */
     String label() default "";

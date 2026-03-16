@@ -1,4 +1,4 @@
-package com.aigent.benchmark.semver;
+package de.makibytes.benchmark.semver;
 
 import java.util.Comparator;
 

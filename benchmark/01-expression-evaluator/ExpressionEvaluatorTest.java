@@ -1,4 +1,4 @@
-package com.aigent.benchmark.expression;
+package de.makibytes.benchmark.expression;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -17,7 +17,7 @@ class ExpressionEvaluatorTest {
     @SuppressWarnings("unchecked")
     void setUp() throws Exception {
         ev = (ExpressionEvaluator) Class
-                .forName("com.aigent.benchmark.expression.ExpressionEvaluatorImpl")
+                .forName("de.makibytes.benchmark.expression.ExpressionEvaluatorImpl")
                 .getDeclaredConstructor()
                 .newInstance();
     }

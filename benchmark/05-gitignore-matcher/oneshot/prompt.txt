@@ -1,4 +1,4 @@
-Implement a Java class called GitIgnoreMatcherImpl in package com.aigent.benchmark.gitignore that implements the following interface:
+Implement a Java class called GitIgnoreMatcherImpl in package de.makibytes.benchmark.gitignore that implements the following interface:
 
     import java.util.List;
 

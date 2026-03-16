@@ -1,4 +1,4 @@
-package com.aigent.benchmark.csv;
+package de.makibytes.benchmark.csv;
 
 import java.util.List;
 

@@ -1,4 +1,4 @@
-package com.aigent.benchmark.deps;
+package de.makibytes.benchmark.deps;
 
 import java.util.List;
 import java.util.Map;

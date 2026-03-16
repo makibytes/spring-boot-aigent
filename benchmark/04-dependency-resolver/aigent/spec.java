@@ -1,4 +1,4 @@
-package com.aigent.benchmark.deps;
+package de.makibytes.benchmark.deps;
 
 import de.makibytes.aigent.*;
 import java.util.List;
@@ -7,6 +7,7 @@ import java.util.Set;
 
 /**
  * Aigent spec for DependencyResolverImpl.
+ * All annotations are enforced at runtime via SpEL.
  */
 public class DependencyResolverImpl implements DependencyResolver {
 
@@ -19,7 +20,7 @@ public class DependencyResolverImpl implements DependencyResolver {
               - If multiple packages become installable at the same time, choose them in
                 alphabetical order so the output is deterministic.
               - Reject invalid graphs:
-                  * missing dependency names that are not present as keys in the input map
+                  * dependency names not present as keys in the input map
                   * self-dependencies
                   * cycles of any length
               - Do not mutate the input map or its sets.
@@ -27,22 +28,23 @@ public class DependencyResolverImpl implements DependencyResolver {
             A standard Kahn topological sort with alphabetical tie-breaking is ideal.
             """)
     @Contract(
-        requires = "dependencies != null",
-        ensures  = "$result.size() == dependencies.size() and every key from dependencies appears exactly once in $result and every dependency appears before each dependent",
+        requires = "$dependencies != null",
+        ensures  = "$result.size() == $dependencies.size() && new java.util.HashSet($result).size() == $result.size()",
         throws_  = {NullPointerException.class, IllegalArgumentException.class}
     )
-    @Example(label = "empty", input = "{}", output = "[]")
-    @Example(label = "single", input = "{app -> []}", output = "[app]")
-    @Example(label = "linear chain", input = "{app -> [service], service -> [core], core -> []}", output = "[core, service, app]")
-    @Example(label = "diamond", input = "{app -> [api, cli], api -> [core], cli -> [core], core -> []}", output = "[core, api, cli, app]")
-    @Example(label = "alphabetical roots", input = "{zeta -> [], alpha -> [], mid -> []}", output = "[alpha, mid, zeta]")
-    @Example(label = "alphabetical after unlock", input = "{api -> [core], cli -> [core], core -> []}", output = "[core, api, cli]")
-    @Example(label = "missing dependency", input = "{app -> [core]}", output = "throws IllegalArgumentException")
-    @Example(label = "cycle", input = "{app -> [service], service -> [app]}", output = "throws IllegalArgumentException")
-    @Example(label = "self cycle", input = "{app -> [app]}", output = "throws IllegalArgumentException")
-    @Property("$result contains no duplicates")
-    @Property("for every edge package -> dependency, indexOf(dependency) < indexOf(package) in $result")
-    @Stub("Use an alphabetical ready-queue. Reject missing nodes and cycles explicitly instead of silently dropping them.")
+    @Example(label = "empty",              input = "{}",                                                   output = "{}")
+    @Example(label = "single",             input = "{'app': {}}",                                         output = "{'app'}")
+    @Example(label = "linear chain",       input = "{'app': {'service'}, 'service': {'core'}, 'core': {}}", output = "{'core','service','app'}")
+    @Example(label = "diamond",            input = "{'app': {'api','cli'}, 'api': {'core'}, 'cli': {'core'}, 'core': {}}", output = "{'core','api','cli','app'}")
+    @Example(label = "alphabetical roots", input = "{'zeta': {}, 'alpha': {}, 'mid': {}}",               output = "{'alpha','mid','zeta'}")
+    @Example(label = "alphabetical unlock",input = "{'api': {'core'}, 'cli': {'core'}, 'core': {}}",     output = "{'core','api','cli'}")
+    @Example(label = "missing dependency", input = "{'app': {'core'}}",                                   throws_ = IllegalArgumentException.class)
+    @Example(label = "cycle",              input = "{'app': {'service'}, 'service': {'app'}}",            throws_ = IllegalArgumentException.class)
+    @Example(label = "self cycle",         input = "{'app': {'app'}}",                                    throws_ = IllegalArgumentException.class)
+    @Property("$result != null && new java.util.HashSet($result).size() == $result.size()")
+    @Property("$result.size() == $dependencies.size()")
+    @Stub("Use an alphabetical ready-queue (TreeSet/PriorityQueue). " +
+          "Reject missing nodes and cycles explicitly. Never silently drop them.")
     @Override
     public List<String> resolve(Map<String, Set<String>> dependencies) {
         throw new UnsupportedOperationException();

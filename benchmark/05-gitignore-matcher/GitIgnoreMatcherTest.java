@@ -1,4 +1,4 @@
-package com.aigent.benchmark.gitignore;
+package de.makibytes.benchmark.gitignore;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -19,7 +19,7 @@ class GitIgnoreMatcherTest {
     @BeforeEach
     void setUp() throws Exception {
         matcher = (GitIgnoreMatcher) Class
-                .forName("com.aigent.benchmark.gitignore.GitIgnoreMatcherImpl")
+                .forName("de.makibytes.benchmark.gitignore.GitIgnoreMatcherImpl")
                 .getDeclaredConstructor()
                 .newInstance();
     }

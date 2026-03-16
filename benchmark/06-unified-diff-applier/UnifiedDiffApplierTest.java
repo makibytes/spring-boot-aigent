@@ -1,4 +1,4 @@
-package com.aigent.benchmark.diff;
+package de.makibytes.benchmark.diff;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -17,7 +17,7 @@ class UnifiedDiffApplierTest {
     @BeforeEach
     void setUp() throws Exception {
         applier = (UnifiedDiffApplier) Class
-                .forName("com.aigent.benchmark.diff.UnifiedDiffApplierImpl")
+                .forName("de.makibytes.benchmark.diff.UnifiedDiffApplierImpl")
                 .getDeclaredConstructor()
                 .newInstance();
     }

@@ -133,7 +133,9 @@ Run `/aigent` again. Repeat until the implementation is correct.
 ```
 
 `$result` binds to the return value in `ensures`. `$input` binds to the first parameter.
-These are pseudo-Java expressions read by the AI — they are not evaluated at runtime.
+Named parameters (e.g., `$divisor`, `$name`) are also available.
+Expressions use **SpEL (Spring Expression Language)** — they are evaluated at runtime by `ContractAspect`.
+The `$variable` syntax is automatically translated to SpEL's `#variable`.
 
 ---
 
@@ -178,6 +180,50 @@ unimplemented stub can never reach production.
 
 ---
 
+## Runtime Contract Enforcement
+
+When `spring-boot-starter-aop` is on the classpath, the auto-configuration registers a
+`ContractAspect` that evaluates `@Contract` expressions at runtime:
+
+- **`requires`** is checked **before** the method executes — violations throw `PreconditionViolationException`
+- **`ensures`** is checked **after** the method returns, with `$result` bound — violations throw `PostconditionViolationException`
+- **MONITOR** mode logs violations with re-stub suggestions instead of throwing
+
+```properties
+aigent.contracts=ENFORCE    # ENFORCE (default) | MONITOR | OFF
+```
+
+`@Pure`-annotated methods are checked for accidental input mutation:
+
+```properties
+aigent.pure-check=true      # true (default) | false
+```
+
+### Testing without Spring
+
+Use `ContractJUnitExtension` to enforce contracts in plain JUnit tests (no Spring context needed):
+
+```java
+class PhoneServiceTest {
+    ContractJUnitExtension contracts = new ContractJUnitExtension();
+    PhoneService service = contracts.wrap(new PhoneServiceImpl(), PhoneService.class);
+
+    @Test void rejectsNull() {
+        assertThrows(PreconditionViolationException.class, () -> service.normalize(null));
+    }
+}
+```
+
+`ExampleRunner` turns every `@Example` annotation into a runnable assertion:
+
+```java
+var runner = new ExampleRunner();
+List<ExampleResult> results = runner.runAll(new PhoneServiceImpl());
+// or extend AbstractExampleTest<PhoneService> for JUnit 5 integration
+```
+
+---
+
 ## Tips for Writing Good Specs
 
 **`@Intent` is the north star.** Write it first, as if explaining to a colleague. The AI reads
@@ -206,48 +252,27 @@ Use `@Pure` only on static utility methods or helper methods with no external ac
 
 ## Benchmark: Aigent vs One-Shot
 
-We ran a tournament across **3 problems × 2 approaches × 3 LLMs = 18 runs** to measure
-whether annotated specs actually improve AI-generated code quality.
+We ran **5 models × 7 problems × 2 approaches = 70 runs** across the full problem set
+(3 classic + 4 complex dev-tooling problems) to measure whether executable specs improve
+AI-generated code quality. Models tested: Claude Sonnet 4.6, MiniMax M2.5, Big Pickle,
+Nemotron 3 Super, MiMo V2 Flash.
 
-**TL;DR — aigent scored 60/60 (100%). One-shot scored 52/60 (87%).**
+| Model | Oneshot | Aigent | Total | Aigent Δ |
+|---|---:|---:|---:|---:|
+| **Claude Sonnet 4.6** | **70/70** | **70/70** | **140/140 (100%)** | `0` |
+| **Big Pickle** | **70/70** | **70/70** | **140/140 (100%)** | `0` |
+| MiniMax M2.5 | 68/70 | 60/70 | 128/140 (91%) | `−8` |
+| Nemotron 3 Super | 66/70 | 58/70 | 124/140 (89%) | `−8` |
+| MiMo V2 Flash | 40/70 | 40/70 | 80/140 (57%) | `0` |
 
-The gap came from a single problem: the **expression evaluator**, where both Gemini 3 Pro and
-Claude Sonnet 4.6 silently produced wrong answers with a vague one-liner prompt —
-`2^3^2 = 64` (should be `512`) and `-2^2 = 4` (should be `-4`). Both are plausible-looking
-wrong answers that pass any casual test. With the aigent spec's `@Example` annotations spelling
-out the correct values and explicitly noting the wrong ones (`// NOT 64.0`), both models
-produced correct implementations on the first try.
-
-| Approach | Score | Pass rate |
-|----------|------:|----------:|
-| **aigent**   | 60/60 | **100%**  |
-| one-shot | 52/60 | 87%       |
+The clearest aigent win: the `@Example` edge cases (right-associative `2^3^2 = 512`,
+unary `-2^2 = -4`) guided Big Pickle through the Expression Evaluator that a vague oneshot
+prompt left it looping on for 30 minutes. After fixing the `\n` unescape bug in SpEL literal
+parsing, Big Pickle's Unified Diff score flipped from 19/20 → 20/20, achieving a perfect
+140/140 — matching Claude Sonnet 4.6.
 
 > See the full results with per-model tables, failure analysis, and timing data:
 > **[benchmark/results/results.md](benchmark/results/results.md)**
-
-### Round 2 — harder dev-tooling problems
-
-We repeated the tournament on **3 more complex software-engineering problems**:
-
-- deterministic dependency resolution (topological sort with alphabetical tie-breaking, cycle/missing-node detection)
-- simplified gitignore matching (`*`, `**`, root anchoring, directory patterns, negation, last-match-wins)
-- unified diff application (hunk parsing, context validation, empty originals, null contracts)
-
-The pattern holds — and is actually sharper on harder problems:
-
-| Approach | Score | Pass rate |
-|----------|------:|----------:|
-| **aigent**   | **90/90** | **100%** |
-| one-shot | 80/90 | 89% |
-
-Every one-shot failure traces directly to a constraint that was spelled out in the aigent spec
-but absent from the plain-language prompt: a wrong exception type (`IAE` vs `NPE`), silent
-`null` acceptance, a missed `oldStart=0` edge case, or a missed path-normalisation example.
-Aigent got all of them right on the first try.
-
-> See the full complex-problem tournament with per-model tables, failure analysis, and timing:
-> **[benchmark/results/complex-results.md](benchmark/results/complex-results.md)**
 
 ---
 
@@ -255,18 +280,21 @@ Aigent got all of them right on the first try.
 
 ```
 src/main/java/de/makibytes/aigent/
-├── Intent.java            @Intent annotation
-├── Contract.java          @Contract annotation
-├── Example.java           @Example annotation (repeatable)
-├── Examples.java          container for @Example
-├── Property.java          @Property annotation (repeatable)
-├── Properties.java        container for @Property
-├── Stub.java              @Stub annotation
-├── Pure.java              @Pure annotation
-├── Confidence.java        HIGH / MEDIUM / LOW enum
-├── AiNote.java            @AiNote annotation (written by AI)
-└── autoconfigure/
-    ├── AigentAutoConfiguration.java   Spring Boot auto-configuration
-    ├── AigentProperties.java          aigent.on-stub property
-    └── StubDetector.java              startup bean scanner
+├── Intent.java, Contract.java, Example.java, Examples.java
+├── Property.java, Properties.java, Stub.java, Pure.java
+├── Confidence.java, AiNote.java
+├── PreconditionViolationException.java, PostconditionViolationException.java
+├── ContractEvaluationException.java, PurityViolationException.java
+├── autoconfigure/
+│   ├── AigentAutoConfiguration.java        Spring Boot auto-configuration
+│   ├── AigentProperties.java               aigent.* properties
+│   ├── ContractAspect.java                 runtime @Contract enforcement (AOP)
+│   ├── ContractExpressionEvaluator.java    SpEL evaluation with $ → # translation
+│   ├── PureAspect.java                     @Pure input-mutation detection (AOP)
+│   └── StubDetector.java                   startup bean scanner
+└── testing/
+    ├── ExampleRunner.java                  runs @Example annotations as assertions
+    ├── AbstractExampleTest.java            JUnit 5 base class
+    ├── ContractJUnitExtension.java         proxy-based contract enforcement (no Spring)
+    └── PropertyVerifier.java               verifies @Property invariants against samples
 ```

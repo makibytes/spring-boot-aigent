@@ -1,4 +1,4 @@
-package com.aigent.benchmark.csv;
+package de.makibytes.benchmark.csv;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -17,7 +17,7 @@ class CsvParserTest {
     @SuppressWarnings("unchecked")
     void setUp() throws Exception {
         parser = (CsvParser) Class
-                .forName("com.aigent.benchmark.csv.CsvParserImpl")
+                .forName("de.makibytes.benchmark.csv.CsvParserImpl")
                 .getDeclaredConstructor()
                 .newInstance();
     }

@@ -1,4 +1,4 @@
-package com.aigent.benchmark.gitignore;
+package de.makibytes.benchmark.gitignore;
 
 import java.util.List;
 

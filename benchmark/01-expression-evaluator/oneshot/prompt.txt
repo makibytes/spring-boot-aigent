@@ -1,4 +1,4 @@
-Implement a Java class called ExpressionEvaluatorImpl in package com.aigent.benchmark.expression that implements the following interface:
+Implement a Java class called ExpressionEvaluatorImpl in package de.makibytes.benchmark.expression that implements the following interface:
 
     public interface ExpressionEvaluator {
         double evaluate(String expression);

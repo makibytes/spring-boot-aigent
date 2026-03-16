@@ -1,0 +1,100 @@
+Implement a tree-walking interpreter for TinyLang, a small dynamically typed functional
+expression language. The public entry point must be a class named TinyLangImpl in the package
+de.makibytes.benchmark.tinylang that implements the TinyLang interface (eval method).
+You may create as many helper classes as you need in the same package.
+
+=== GRAMMAR ===
+
+  program     ::= expr
+
+  expr        ::= let_expr | letrec_expr | if_expr | fn_expr | or_expr
+  let_expr    ::= 'let' IDENT '=' expr 'in' expr
+  letrec_expr ::= 'letrec' IDENT '=' 'fn' '(' params ')' '=>' expr 'in' expr
+  if_expr     ::= 'if' expr 'then' expr 'else' expr
+  fn_expr     ::= 'fn' '(' params ')' '=>' expr
+  params      ::= IDENT (',' IDENT)*
+
+  or_expr     ::= and_expr ('||' and_expr)*
+  and_expr    ::= not_expr ('&&' not_expr)*
+  not_expr    ::= '!' not_expr | cmp_expr
+  cmp_expr    ::= add_expr (('==' | '!=' | '<' | '<=' | '>' | '>=') add_expr)?
+  add_expr    ::= mul_expr (('+' | '-') mul_expr)*
+  mul_expr    ::= pow_expr (('*' | '/' | '%') pow_expr)*
+  pow_expr    ::= unary ('^' pow_expr)?     ← right-associative
+  unary       ::= '-' unary | call_expr
+  call_expr   ::= primary ('(' args ')')*
+  primary     ::= '(' expr ')' | INT | FLOAT | BOOL | STRING | IDENT
+  args        ::= (expr (',' expr)*)?
+
+=== TYPES AND RETURN VALUES ===
+
+  Integer literal → Java Long
+  Float literal   → Java Double   (contains a decimal point)
+  Boolean literal → Java Boolean  (true / false)
+  String literal  → Java String   (delimited by ", supports \n \t \\ \" escapes)
+
+  eval() must return one of: Long, Double, Boolean, String.
+  On any error (type mismatch, undefined variable, division by zero, parse failure, wrong arg
+  count, etc.) throw TinyLang.TinyLangException.
+  Throw NullPointerException if source is null.
+
+=== ARITHMETIC RULES ===
+
+  Long   op Long   → Long
+  Double op Double → Double
+  Long   op Double (or Double op Long) → promote the Long to Double, result is Double
+
+  String + String → String (concatenation)
+  Any other type combination for + → TinyLangException
+
+  int / int  → Long, truncated toward zero  (e.g. 7/2 = 3, -7/2 = -3)
+  int / 0    → TinyLangException
+  float / 0.0 → Double.POSITIVE_INFINITY / NEGATIVE_INFINITY (IEEE 754, not an exception)
+
+  int % int  → Long; int % 0 → TinyLangException
+  % with any float operand → TinyLangException
+
+  int ^ int(>= 0) → Long  (use (long) Math.pow(base, exp))
+  int ^ int(< 0)  → TinyLangException  (negative exponent not defined for integer base)
+  involving any Double operand → Double  (use Math.pow)
+
+=== COMPARISON RULES ===
+
+  ==, !=  : Long==Long, Double==Double, Boolean==Boolean, String==String → Boolean
+            Long==Double or Double==Long → promote Long to Double, then compare → Boolean
+            any other type combination → TinyLangException
+
+  <, <=, >, >= : numeric types only (Long, Double, with same promotion rules)
+                 comparing String or Boolean → TinyLangException
+
+=== LOGICAL OPERATORS ===
+
+  &&, ||, ! : Boolean operands only; non-Boolean → TinyLangException
+  && and || MUST short-circuit:
+    - false && expr  →  false  without evaluating expr
+    - true  || expr  →  true   without evaluating expr
+
+=== SCOPING AND FUNCTIONS ===
+
+  Lexical scope throughout.
+
+  let x = e1 in e2
+    Evaluate e1, bind result to x, evaluate e2 in the extended scope.
+    x is not visible outside e2.
+
+  letrec f = fn(params) => body in expr
+    Like let but f IS visible inside body, enabling recursion.
+    (Plain let would result in "undefined variable: f" when body calls f.)
+
+  fn(params) => body
+    Creates a closure that captures the CURRENT lexical environment at the time the
+    fn expression is evaluated (definition-time capture, not call-time lookup).
+
+  Function call f(args):
+    Evaluate all arguments, then evaluate body in a new scope where each param
+    is bound to the corresponding argument value.
+    Wrong argument count → TinyLangException.
+
+  Whitespace (spaces, tabs, newlines) between tokens is ignored.
+  Identifiers: start with a letter or underscore, followed by letters, digits, underscores.
+  Keywords (not valid as identifiers): let, letrec, in, fn, if, then, else, true, false.

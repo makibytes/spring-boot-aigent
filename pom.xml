@@ -12,7 +12,7 @@
         <relativePath/>
     </parent>
 
-    <groupId>com.aigent</groupId>
+    <groupId>de.makibytes.aigent</groupId>
     <artifactId>aigent-spring-boot-starter</artifactId>
     <version>1.0.0-SNAPSHOT</version>
     <packaging>jar</packaging>
@@ -41,6 +41,13 @@
             <optional>true</optional>
         </dependency>
 
+        <!-- AOP (optional — contract enforcement only activates when on classpath) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-aop</artifactId>
+            <optional>true</optional>
+        </dependency>
+
         <!-- Test -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -57,6 +64,13 @@
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
                     <skip>true</skip>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <parameters>true</parameters>
                 </configuration>
             </plugin>
         </plugins>

@@ -1,4 +1,4 @@
-Implement a Java class called SemVerComparatorImpl in package com.aigent.benchmark.semver that implements the following interface:
+Implement a Java class called SemVerComparatorImpl in package de.makibytes.benchmark.semver that implements the following interface:
 
     public interface SemVerComparator extends java.util.Comparator<String> {
         int compare(String v1, String v2);

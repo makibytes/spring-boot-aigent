@@ -1,8 +1,10 @@
-package com.aigent.benchmark.semver;
+package de.makibytes.benchmark.semver;
+
+import de.makibytes.aigent.*;
 
 /**
  * Aigent spec for SemVerComparatorImpl following SemVer 2.0.0 precisely.
- * Implement the @Stub method. All edge cases are specified in @Example.
+ * All annotations are enforced at runtime via SpEL.
  */
 public class SemVerComparatorImpl implements SemVerComparator {
 
@@ -32,26 +34,26 @@ public class SemVerComparatorImpl implements SemVerComparator {
             A version string has the format: MAJOR.MINOR.PATCH[-PRERELEASE][+BUILD]
             """)
     @Contract(
-        requires = "v1 != null && v2 != null && both match SemVer format",
-        ensures  = "result < 0 iff v1 < v2, result == 0 iff v1 == v2, result > 0 iff v1 > v2",
+        requires = "$v1 != null && $v2 != null",
+        ensures  = "compare($v2, $v1) == -$result || ($result == 0 && compare($v2, $v1) == 0)",
         throws_  = {IllegalArgumentException.class}
     )
-    @Example(label = "equal",                  input = "v1=\"1.0.0\",   v2=\"1.0.0\"",              output = "0")
-    @Example(label = "major differs",          input = "v1=\"2.0.0\",   v2=\"1.0.0\"",              output = "positive")
-    @Example(label = "numeric minor — CRITICAL", input = "v1=\"1.10.0\", v2=\"1.9.0\"",             output = "positive  // 10>9 numerically, NOT '1'<'9' lexicographically")
-    @Example(label = "numeric patch",          input = "v1=\"1.0.10\",  v2=\"1.0.9\"",              output = "positive")
-    @Example(label = "prerelease < release",   input = "v1=\"1.0.0-alpha\", v2=\"1.0.0\"",          output = "negative")
-    @Example(label = "shorter pre < longer",   input = "v1=\"1.0.0-alpha\", v2=\"1.0.0-alpha.1\"",  output = "negative")
-    @Example(label = "numeric pre field",      input = "v1=\"1.0.0-alpha.2\", v2=\"1.0.0-alpha.10\"", output = "negative  // 2<10 numerically")
-    @Example(label = "numeric < alpha pre",    input = "v1=\"1.0.0-1\", v2=\"1.0.0-alpha\"",        output = "negative  // numeric ID has lower precedence than alphanumeric")
-    @Example(label = "build metadata ignored", input = "v1=\"1.0.0+b1\", v2=\"1.0.0+b2\"",         output = "0  // build metadata irrelevant for precedence")
-    @Example(label = "build vs no build",      input = "v1=\"1.0.0+sha\", v2=\"1.0.0\"",            output = "0")
-    @Example(label = "pre+build vs release",   input = "v1=\"1.0.0-alpha+b1\", v2=\"1.0.0\"",      output = "negative")
-    @Property("compare(v, v) == 0 for all valid v")
-    @Property("compare(v1, v2) == -compare(v2, v1) for all valid v1, v2")
-    @Stub("Strip build metadata first (+...), then split into release and pre-release (-)." +
+    @Example(label = "equal",                    input = "{'1.0.0', '1.0.0'}",          output = "0")
+    @Example(label = "major differs",            input = "{'2.0.0', '1.0.0'}",          output = "1")
+    @Example(label = "numeric minor — CRITICAL", input = "{'1.10.0', '1.9.0'}",         output = "1")
+    @Example(label = "numeric patch",            input = "{'1.0.10', '1.0.9'}",         output = "1")
+    @Example(label = "prerelease lt release",    input = "{'1.0.0-alpha', '1.0.0'}",    output = "-1")
+    @Example(label = "shorter pre lt longer",    input = "{'1.0.0-alpha', '1.0.0-alpha.1'}", output = "-1")
+    @Example(label = "numeric pre field",        input = "{'1.0.0-alpha.2', '1.0.0-alpha.10'}", output = "-1")
+    @Example(label = "numeric lt alpha pre",     input = "{'1.0.0-1', '1.0.0-alpha'}",  output = "-1")
+    @Example(label = "build metadata ignored",   input = "{'1.0.0+b1', '1.0.0+b2'}",   output = "0")
+    @Example(label = "build vs no build",        input = "{'1.0.0+sha', '1.0.0'}",      output = "0")
+    @Example(label = "pre+build vs release",     input = "{'1.0.0-alpha+b1', '1.0.0'}", output = "-1")
+    @Property("compare($v1, $v1) == 0")
+    @Property("T(Integer).signum($result) == -T(Integer).signum(compare($v2, $v1)) || ($result == 0 && compare($v2, $v1) == 0)")
+    @Stub("Strip build metadata first (+...), then split into release and pre-release (-). " +
           "Compare major/minor/patch as integers. For pre-release: numeric-only fields as int, " +
-          "others as string, numeric always < alphanumeric. A missing pre-release means higher precedence.")
+          "others as string, numeric always < alphanumeric. Missing pre-release means higher precedence.")
     @Override
     public int compare(String v1, String v2) {
         throw new UnsupportedOperationException();

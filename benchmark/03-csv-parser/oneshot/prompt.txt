@@ -1,4 +1,4 @@
-Implement a Java class called CsvParserImpl in package com.aigent.benchmark.csv that implements the following interface:
+Implement a Java class called CsvParserImpl in package de.makibytes.benchmark.csv that implements the following interface:
 
     public interface CsvParser {
         java.util.List<java.util.List<String>> parse(String csv);

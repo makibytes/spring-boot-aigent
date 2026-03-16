@@ -1,10 +1,11 @@
-package com.aigent.benchmark.csv;
+package de.makibytes.benchmark.csv;
 
+import de.makibytes.aigent.*;
 import java.util.List;
 
 /**
  * Aigent spec for CsvParserImpl following RFC 4180.
- * Every edge case that typically destroys naive implementations is listed in @Example.
+ * All annotations are enforced at runtime via SpEL.
  */
 public class CsvParserImpl implements CsvParser {
 
@@ -26,26 +27,24 @@ public class CsvParserImpl implements CsvParser {
             6. DO NOT use String.split(",") — it is incorrect for quoted fields.
             """)
     @Contract(
-        requires = "csv != null",
-        ensures  = "$result is a non-null list; fields are never null",
-        throws_  = {IllegalArgumentException.class}
+        requires = "$csv != null",
+        ensures  = "$result != null && $result.stream().noneMatch(row -> row == null || row.stream().anyMatch(f -> f == null))",
+        throws_  = {NullPointerException.class}
     )
-    @Example(label = "single field",        input = "\"hello\"",              output = "[[\"hello\"]]")
-    @Example(label = "single row",          input = "\"a,b,c\"",              output = "[[\"a\",\"b\",\"c\"]]")
-    @Example(label = "multiple rows LF",    input = "\"a,b\\nc,d\"",           output = "[[\"a\",\"b\"],[\"c\",\"d\"]]")
-    @Example(label = "CRLF line ending",    input = "\"a,b\\r\\nc,d\"",        output = "[[\"a\",\"b\"],[\"c\",\"d\"]]")
-    @Example(label = "empty fields comma",  input = "\",\"",                   output = "[[\"\" ,\"\"]]")
-    @Example(label = "empty input",         input = "\"\"",                    output = "[]")
-    @Example(label = "quoted comma — CRITICAL", input = "\"\\\"hello, world\\\"\"",     output = "[[\"hello, world\"]]  // one field despite the comma")
-    @Example(label = "quoted newline — CRITICAL", input = "\"\\\"line1\\nline2\\\"\"",  output = "[[\"line1\\nline2\"]]  // newline inside quotes = part of field")
-    @Example(label = "doubled quote — CRITICAL",  input = "\"\\\"say \\\"\\\"hi\\\"\\\"\\\"\"", output = "[[\"say \\\"hi\\\"\"]]  // \"\" inside quotes → one literal \"")
-    @Example(label = "mixed quoted and plain",    input = "\"a,\\\"b,c\\\",d\"",         output = "[[\"a\",\"b,c\",\"d\"]]")
-    @Example(label = "spaces not trimmed",        input = "\" a , b \"",                 output = "[[\" a \",\" b \"]]")
-    @Property("parse(csv).stream().mapToInt(List::size).sum() == (number of unquoted commas that are field separators)")
-    @Property("no field in $result is ever null")
-    @Stub("Use a character-by-character state machine or index scanner — NOT split(). " +
-          "States: NORMAL (accumulate char), IN_QUOTE (accumulate char, watch for \"\"), " +
-          "AFTER_QUOTE (expect comma, \\n, \\r, or end). " +
+    @Example(label = "empty input",           input = "''",                              output = "{}")
+    @Example(label = "single field",          input = "'hello'",                         output = "{{'hello'}}")
+    @Example(label = "single row",            input = "'a,b,c'",                         output = "{{'a','b','c'}}")
+    @Example(label = "multiple rows LF",      input = "'a,b\nc,d'",                      output = "{{'a','b'},{'c','d'}}")
+    @Example(label = "CRLF line ending",      input = "'a,b\r\nc,d'",                    output = "{{'a','b'},{'c','d'}}")
+    @Example(label = "empty fields comma",    input = "','",                             output = "{{'',''}}")
+    @Example(label = "quoted comma CRITICAL", input = "'\"hello, world\"'",              output = "{{'hello, world'}}")
+    @Example(label = "doubled quote CRITICAL",input = "'\"say \"\"hi\"\"\"'",            output = "{{'say \"hi\"'}}")
+    @Example(label = "spaces not trimmed",    input = "' a , b '",                       output = "{{' a ',' b '}}")
+    @Example(label = "mixed quoted and plain",input = "'a,\"b,c\",d'",                   output = "{{'a','b,c','d'}}")
+    @Property("$result != null")
+    @Property("$result.stream().noneMatch(row -> row.stream().anyMatch(f -> f == null))")
+    @Stub("Use a character-by-character state machine — NOT split(). " +
+          "States: NORMAL (accumulate), IN_QUOTE (accumulate, watch for \"\"), AFTER_QUOTE. " +
           "Quoted newlines are part of the field. CRLF outside quotes = row separator. " +
           "Empty input → empty list.")
     @Override

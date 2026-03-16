@@ -4,7 +4,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.aigent.benchmark</groupId>
+    <groupId>de.makibytes.benchmark</groupId>
     <artifactId>benchmark-run</artifactId>
     <version>1.0.0-SNAPSHOT</version>
 
@@ -18,7 +18,7 @@
     <dependencies>
         <!-- Aigent annotations (needed when LLM keeps @AiNote/@Intent etc. in the implementation) -->
         <dependency>
-            <groupId>com.aigent</groupId>
+            <groupId>de.makibytes.aigent</groupId>
             <artifactId>aigent-spring-boot-starter</artifactId>
             <version>1.0.0-SNAPSHOT</version>
         </dependency>
@@ -38,6 +38,17 @@
 
     <build>
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.13.0</version>
+                <configuration>
+                    <!-- Required for SpEL named-parameter binding in @Contract/@Property -->
+                    <parameters>true</parameters>
+                    <source>21</source>
+                    <target>21</target>
+                </configuration>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>

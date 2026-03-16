@@ -1,4 +1,4 @@
-package com.aigent.benchmark.semver;
+package de.makibytes.benchmark.semver;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -16,7 +16,7 @@ class SemVerComparatorTest {
     @SuppressWarnings("unchecked")
     void setUp() throws Exception {
         cmp = (SemVerComparator) Class
-                .forName("com.aigent.benchmark.semver.SemVerComparatorImpl")
+                .forName("de.makibytes.benchmark.semver.SemVerComparatorImpl")
                 .getDeclaredConstructor()
                 .newInstance();
     }

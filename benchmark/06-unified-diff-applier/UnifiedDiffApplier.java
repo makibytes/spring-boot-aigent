@@ -1,4 +1,4 @@
-package com.aigent.benchmark.diff;
+package de.makibytes.benchmark.diff;
 
 /**
  * Applies a simplified unified diff to a text document.
