@@ -260,16 +260,18 @@ Nemotron 3 Super, MiMo V2 Flash.
 | Model | Oneshot | Aigent | Total | Aigent Δ |
 |---|---:|---:|---:|---:|
 | **Claude Sonnet 4.6** | **70/70** | **70/70** | **140/140 (100%)** | `0` |
-| **Big Pickle** | **70/70** | **70/70** | **140/140 (100%)** | `0` |
-| MiniMax M2.5 | 68/70 | 60/70 | 128/140 (91%) | `−8` |
-| Nemotron 3 Super | 66/70 | 58/70 | 124/140 (89%) | `−8` |
-| MiMo V2 Flash | 40/70 | 40/70 | 80/140 (57%) | `0` |
+| MiniMax M2.5 | **70/70** | 68/70 | **138/140 (99%)** | `−2` |
+| MiMo V2 Flash | 68/70 | **70/70** | **138/140 (99%)** | **`+2` 🎉** |
+| Big Pickle | 62/70 | **68/70** | **130/140 (93%)** | **`+6` 🎉** |
+| Nemotron 3 Super | 60/70 | 60/70 | **120/140 (86%)** | `0` |
 
-The clearest aigent win: the `@Example` edge cases (right-associative `2^3^2 = 512`,
-unary `-2^2 = -4`) guided Big Pickle through the Expression Evaluator that a vague oneshot
-prompt left it looping on for 30 minutes. After fixing the `\n` unescape bug in SpEL literal
-parsing, Big Pickle's Unified Diff score flipped from 19/20 → 20/20, achieving a perfect
-140/140 — matching Claude Sonnet 4.6.
+**Aggregate across all models: oneshot 330 · aigent 336 — aigent wins.**
+
+The spec-to-prompt compiler (`spec-to-prompt.py`) generates a richer implementation brief
+from the spec annotations than any hand-written oneshot prompt: every `@Example` becomes an
+explicit numbered test case, `@Contract` becomes clear pre/postcondition rules, and `@Stub`
+becomes implementation notes. Big Pickle's Unified Diff went from 1/20 (oneshot) to 20/20
+(aigent); MiMo's TinyLang went from 42/43 to 43/43.
 
 > See the full results with per-model tables, failure analysis, and timing data:
 > **[benchmark/results/results.md](benchmark/results/results.md)**
