@@ -239,23 +239,11 @@ The ${IFACE}.java interface and ${IFACE}Test.java are already present in the run
 Use all available tools: write files, run 'mvn test' in the run directory, fix failures, iterate."
 
       else
-        SPEC="$(cat "${PROBLEM}/aigent/spec.java")"
-        PROMPT="You are the Aigent implementation engine. Below is a Java spec file with
-@Stub-annotated method(s). Implement the spec so that 'mvn test' passes in the run directory.
-
-${SPEC}
-
-The run directory is: ${BENCHMARK_DIR}/${RUN_DIR}
-Write the implementation under: ${SRC_DIR}/
-
-Rules:
-- Remove @Stub. Write the full implementation.
-- Keep all spec annotations (@Intent, @Contract, @Example, @Property) exactly as-is.
-- All aigent annotations are in package de.makibytes.aigent — the import is already in the file.
-- Add @AiNote immediately before the method signature using ONLY these fields:
-    @AiNote(confidence = Confidence.HIGH, assumed = \"...\", open = \"...\")
-  (valid fields: confidence, assumed, open — no other field names exist)
-- Use all available tools: write files, run 'mvn test' in the run directory, fix failures, iterate."
+        PROMPT="$(python3 "${BENCHMARK_DIR}/spec-to-prompt.py" \
+          "${BENCHMARK_DIR}/${PROBLEM}/aigent/spec.java" \
+          "$IFACE" \
+          "${BENCHMARK_DIR}/${RUN_DIR}" \
+          "${SRC_DIR}/")"
       fi
 
       MODEL_LOG="${RUN_DIR}/model-output.txt"
