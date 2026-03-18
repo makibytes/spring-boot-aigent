@@ -1,0 +1,12 @@
+Implement a Java class called CronMatcherImpl in package de.makibytes.benchmark.cron
+that implements the following interface:
+
+    public interface CronMatcher {
+        boolean matches(String cron, String datetime);
+    }
+
+The matches method receives a 5-field Unix cron expression (min hour dom month dow)
+and a datetime string in "yyyy-MM-dd HH:mm" format, and returns true if the datetime
+matches the cron schedule.
+
+Output only the complete Java source file. No explanation.

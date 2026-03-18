@@ -39,6 +39,11 @@ ALL_PROBLEMS=(
   "05-gitignore-matcher:gitignore:GitIgnoreMatcher"
   "06-unified-diff-applier:diff:UnifiedDiffApplier"
   "07-tinylang-interpreter:tinylang:TinyLang"
+  "08-shell-splitter:shell:ShellSplitter"
+  "09-cron-matcher:cron:CronMatcher"
+  "10-toml-parser:toml:TomlParser"
+  "11-css-selector:css:CssMatcher"
+  "12-mustache-renderer:mustache:MustacheRenderer"
 )
 
 # ── Argument parsing ───────────────────────────────────────────────────────────

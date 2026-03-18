@@ -1,0 +1,22 @@
+Implement a Java class called CssMatcherImpl in package de.makibytes.benchmark.css
+that implements the following interface:
+
+    public interface CssMatcher {
+        List<String> select(String html, String selector);
+    }
+
+The select method parses the HTML string into a DOM tree and evaluates the CSS
+selector against it, returning the id attribute values of all matching elements
+in document order.
+
+All test HTML uses single-quoted attribute values and is always well-formed.
+Every element has a unique id attribute.
+
+Support the following selector features:
+  - Type selectors (div, p, *), ID selectors (#id), class selectors (.foo, .foo.bar)
+  - Attribute selectors: [attr], [attr=v], [attr~=v], [attr|=v], [attr^=v], [attr$=v], [attr*=v]
+  - Pseudo-classes: :first-child, :last-child, :only-child, :nth-child(An+B), :not(S)
+  - Combinators: descendant (space), child (>), adjacent sibling (+), general sibling (~)
+  - Selector lists (comma-separated)
+
+Output only the complete Java source file. No explanation.

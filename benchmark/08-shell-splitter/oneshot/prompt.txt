@@ -1,0 +1,14 @@
+Implement a Java class called ShellSplitterImpl in package de.makibytes.benchmark.shell
+that implements the following interface:
+
+    public interface ShellSplitter {
+        List<String> split(String input);
+        class SyntaxException extends RuntimeException {
+            public SyntaxException(String message) { super(message); }
+        }
+    }
+
+The split method should parse a POSIX-style shell command line and return the list
+of tokens after applying quote removal and word splitting.
+
+Output only the complete Java source file. No explanation.

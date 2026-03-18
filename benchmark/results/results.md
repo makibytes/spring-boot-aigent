@@ -1,185 +1,200 @@
-# Benchmark Results — Round 5
+# Benchmark Results — Final (12 Problems)
 
-**5 models × 7 problems × 2 approaches = 70 runs**
+**5 models × 12 problems × 2 approaches = 120 runs**
 
-Round 5 introduces the **spec-to-prompt compiler** (`spec-to-prompt.py`): instead of giving
-models the raw spec.java with annotation-preservation rules, the aigent prompt now extracts
-`@Intent`, all `@Example` cases as numbered test cases, `@Contract`, `@Property`, and `@Stub`
-notes into a clean, model-friendly brief — strictly more informative than any hand-written
-oneshot prompt.
+Rating per run: 10 = all pass · 8 = ≤20% fail · 6 = ≤33% fail · 4 = ≤50% fail · 2 = some pass · 0 = none/compile error.
+`[T]` = timed out (30 min) but implementation existed — tests still ran.
+Max per approach: 12 × 10 = **120 pts**. Combined max: **240 pts**.
 
-Problems span two difficulty tiers:
+---
 
-| # | Problem | Tier |
-|---|---------|------|
-| 01 | Expression Evaluator (operator precedence, right-assoc `^`, unary `-`) | Classic |
-| 02 | SemVer Comparator (pre-release ordering, numeric vs lexicographic) | Classic |
-| 03 | CSV Parser (RFC 4180, quoted fields, embedded newlines) | Classic |
-| 04 | Dependency Resolver (topological sort, cycle / missing-node detection) | Complex |
-| 05 | Gitignore Matcher (`*`, `**`, anchoring, negation, last-match-wins) | Complex |
-| 06 | Unified Diff Applier (hunk parsing, context validation, empty originals) | Complex |
-| 07 | TinyLang Interpreter (variables, if/while, arithmetic, user functions) | Complex |
+## Problem Set
+
+| # | Problem | Why it's interesting |
+|---|---------|---------------------|
+| 01 | Expression Evaluator | Classic recursive descent / operator precedence |
+| 02 | SemVer Comparator | Spec-precise version ordering with pre-release rules |
+| 03 | CSV Parser | RFC 4180 quoting, escaping, multiline fields |
+| 04 | Dependency Resolver | Topological sort, cycle detection |
+| 05 | Gitignore Matcher | Pattern language with negation, `**`, anchored vs rooted rules |
+| 06 | Unified Diff Applier | Line-addressed patch format, hunk arithmetic |
+| 07 | TinyLang Interpreter | Interpreter with closures, first-class functions, recursion |
+| 08 | Shell Splitter | POSIX quoting rules, backslash handling, line continuation |
+| 09 | Cron Matcher | DOM+DOW OR semantics, `7`=Sunday, step ranges, named fields |
+| 10 | TOML Parser | `0x`/`0o`/`0b` integers, `_` separators, `inf`/`nan`, multiline |
+| 11 | CSS Selector Engine | 3-component architecture (HTML parser + selector parser + matcher); `:nth-child(An+B)`, combinators, attribute operators |
+| 12 | Mustache Renderer | Standalone tag removal, `0` truthy/`""` falsy, HTML escape order, `{{.}}` in iterations |
 
 ---
 
 ## Overall Scores
 
-Rating per run: 10 = all pass · 8 = ≤20% fail · 6 = ≤33% fail · 4 = ≤50% fail · 2 = some pass · 0 = none / error.
-`[T]` = timed out (30 min) but implementation existed — tests still ran.
-Max per approach: 7 × 10 = **70 pts**. Combined max: **140 pts**.
+| Model | Oneshot | Aigent | Aigent Δ |
+|---|---:|---:|---:|
+| **Claude Sonnet 4.6** | **120/120** | **120/120** | `0` |
+| Big Pickle | 106/120 | 106/120 | `0` |
+| MiMo V2 Flash | 114/120 | 106/120 | `−8` |
+| MiniMax M2.5 | 108/120 | 98/120 | `−10` |
+| Nemotron 3 Super | 94/120 | 82/120 | `−12` |
 
-| Model | Oneshot | Aigent | Total | Aigent Δ | vs Round 4 |
-|---|---:|---:|---:|---:|---:|
-| **Claude Sonnet 4.6** | **70/70** | **70/70** | **140/140 (100%)** | `0` | — |
-| MiniMax M2.5 | **70/70** | 68/70 | **138/140 (99%)** | `−2` | **+10** |
-| MiMo V2 Flash | 68/70 | **70/70** | **138/140 (99%)** | **`+2` 🎉** | **+58** |
-| Big Pickle | 62/70 | **68/70** | **130/140 (93%)** | **`+6` 🎉** | −10 |
-| Nemotron 3 Super | 60/70 | 60/70 | **120/140 (86%)** | `0` | −4 |
-
-**Aggregate across all models: oneshot 330 · aigent 336 — aigent wins for the first time.**
+**Aggregate: oneshot 542 · aigent 512 — oneshot leads by 30 points.**
 
 ---
 
-## Per-Problem Results
+## Per-Problem Scores
 
 ### Oneshot
 
-| Problem | Claude 4.6 | Big Pickle | MiniMax M2.5 | MiMo Flash | Nemotron 3 |
-|---|:---:|:---:|:---:|:---:|:---:|
-| Expression Eval | 20/20 | 20/20 | 20/20 | 20/20 | 20/20 |
-| SemVer Compare | 17/17 | 17/17 | 17/17 | 17/17 | 17/17 |
-| CSV Parser | 18/18 | 18/18 | 18/18 | 18/18 | 18/18 |
-| Dep Resolver | 22/22 | 22/22 | 22/22 | 22/22 | 22/22 |
-| Gitignore Match | 24/24 | 24/24 | 24/24 | 24/24 | 24/24 |
-| Unified Diff | 20/20 | **1/20 ⚠️** | 20/20 | 20/20 | 20/20 |
-| TinyLang | 43/43 | 43/43 | 43/43 | **42/43** | **[T] 0/0** |
+| Problem | Claude 4.6 | Big Pickle | MiniMax M2.5 | MiMo Flash | Nemotron 3 | Sum |
+|---|:---:|:---:|:---:|:---:|:---:|---:|
+| 01 Expression Eval | 10 | 10 | 10 | 10 | 10 | **50** |
+| 02 SemVer Compare | 10 | 10 | 10 | 10 | 10 | **50** |
+| 03 CSV Parser | 10 | 10 | 10 | 10 | 10 | **50** |
+| 04 Dep Resolver | 10 | 10 | 10 | 10 | 10 | **50** |
+| 05 Gitignore Match | 10 | 10 | 10 | 10 | 10 | **50** |
+| 06 Unified Diff | 10 | **2** | 10 | 10 | 10 | **42** |
+| 07 TinyLang | 10 | 10 | 10 | **8** | **0** | **38** |
+| 08 Shell Splitter | 10 | 10 | 10 | 10 | 10 | **50** |
+| 09 Cron Matcher | 10 | 10 | 10 | 10 | 10 | **50** |
+| 10 TOML Parser | 10 | 10 | 10 | 10 | **8** | **48** |
+| 11 CSS Selector | 10 | 10 | **0** | **8** | **2** | **30** |
+| 12 Mustache | 10 | **4** | **8** | **8** | **4** | **34** |
+| **Total** | **120** | **106** | **108** | **114** | **94** | **542** |
 
 ### Aigent (spec-to-prompt compiler)
 
-| Problem | Claude 4.6 | Big Pickle | MiniMax M2.5 | MiMo Flash | Nemotron 3 |
-|---|:---:|:---:|:---:|:---:|:---:|
-| Expression Eval | 20/20 | 20/20 | 20/20 | 20/20 | 20/20 |
-| SemVer Compare | 17/17 | 17/17 | 17/17 | **[T] 17/17** | 17/17 |
-| CSV Parser | 18/18 | 18/18 | 18/18 | 18/18 | 18/18 |
-| Dep Resolver | 22/22 | 22/22 | 22/22 | 22/22 | 22/22 |
-| Gitignore Match | 24/24 | 24/24 | 24/24 | 24/24 | 24/24 |
-| Unified Diff | 20/20 | **20/20 ✅** | 20/20 | 20/20 | 20/20 |
-| TinyLang | 43/43 | **[T] 41/43** | **[T] 35/43** | **43/43 ✅** | **0/0** |
+| Problem | Claude 4.6 | Big Pickle | MiniMax M2.5 | MiMo Flash | Nemotron 3 | Sum |
+|---|:---:|:---:|:---:|:---:|:---:|---:|
+| 01 Expression Eval | 10 | 10 | 10 | 10 | 10 | **50** |
+| 02 SemVer Compare | 10 | 10 | 10 | 10 | 10 | **50** |
+| 03 CSV Parser | 10 | 10 | 10 | 10 | 10 | **50** |
+| 04 Dep Resolver | 10 | 10 | 10 | 10 | 10 | **50** |
+| 05 Gitignore Match | 10 | 10 | 10 | 10 | 10 | **50** |
+| 06 Unified Diff | 10 | **10 ✅** | 10 | 10 | 10 | **50** |
+| 07 TinyLang | 10 | **[T] 8** | **[T] 8** | **10 ✅** | **0** | **36** |
+| 08 Shell Splitter | 10 | 10 | 10 | 10 | 10 | **50** |
+| 09 Cron Matcher | 10 | 10 | 10 | 10 | **[T] 0** | **40** |
+| 10 TOML Parser | 10 | 10 | 10 | 10 | **8** | **48** |
+| 11 CSS Selector | 10 | **8** | **0** | **6** | **0** | **24** |
+| 12 Mustache | 10 | **0** | **0** | **0** | **4** | **14** |
+| **Total** | **120** | **106** | **98** | **106** | **82** | **512** |
 
 ---
 
-## Timing
+## Per-Model Analysis
 
-### Oneshot (wall time)
+### Claude Sonnet 4.6 — 120/120 both approaches
 
-| Problem | Claude 4.6 | Big Pickle | MiniMax M2.5 | MiMo Flash | Nemotron 3 |
-|---|---:|---:|---:|---:|---:|
-| Expression Eval | 35s | 3m15s | 3m51s | 3m11s | 9m32s |
-| SemVer Compare | 20s | 45s | 45s | 1m20s | 1m45s |
-| CSV Parser | 25s | 1m00s | 30s | 25s | 5m01s |
-| Dep Resolver | 35s | 1m20s | 1m10s | 1m20s | 1m10s |
-| Gitignore Match | 1m10s | 5m46s | 2m06s | 4m21s | 9m38s |
-| Unified Diff | 40s | 2m21s | 5m11s | 2m11s | 2m41s |
-| TinyLang | 3m11s | 3m46s | 3m06s | 7m32s | TIMEOUT |
-| **Total** | **~6m** | **~18m** | **~17m** | **~20m** | **~90m*** |
+Perfect scores across all 12 problems in both approaches. The structured spec adds no signal when
+the model already possesses the knowledge needed to implement correctly from a short description.
+Aigent often runs slower (more prompt to process) but produces identical results.
 
-### Aigent (wall time)
+### Big Pickle — 106/106 (tied)
 
-| Problem | Claude 4.6 | Big Pickle | MiniMax M2.5 | MiMo Flash | Nemotron 3 |
-|---|---:|---:|---:|---:|---:|
-| Expression Eval | 1m45s | 3m31s | 1m50s | 1m40s | 1m45s |
-| SemVer Compare | 25s | 55s | 45s | TIMEOUT✓ | 1m10s |
-| CSV Parser | 25s | 45s | 1m25s | 55s | 3m56s |
-| Dep Resolver | 35s | 1m10s | 1m10s | 1m30s | 2m01s |
-| Gitignore Match | 5m11s | 2m56s | 3m46s | 1m45s | 11m47s |
-| Unified Diff | 3m01s | 1m15s | 1m10s | 2m31s | 7m27s |
-| TinyLang | 3m06s | TIMEOUT | TIMEOUT | 3m26s | killed |
-| **Total** | **~14m** | **~41m*** | **~41m*** | **~13m** | **~89m** |
+The only model where aigent rescued a failing oneshot: Unified Diff scored 1/20 oneshot and 20/20
+aigent — the spec's explicit hunk format description fixed a systematic misunderstanding. However
+Mustache aigent catastrophically failed (0/35) while oneshot managed 21/35, exactly cancelling the
+gain. Net delta: zero. Both approaches hit the same ceiling.
+
+### MiMo V2 Flash — 114 oneshot, 106 aigent (Δ−8)
+
+MiMo's oneshot is the strongest of the three mid-tier opencode models. Aigent helped TinyLang
+(42/43 → 43/43) but hurt CSS selector (8 → 6) and destroyed Mustache (29/35 → 0/35). The Mustache
+aigent prompt apparently overrode MiMo's correct pre-trained knowledge with a complex algorithmic
+description that the model followed incorrectly.
+
+### MiniMax M2.5 — 108 oneshot, 98 aigent (Δ−10)
+
+MiniMax failed CSS selector in both approaches (both timed out without producing compilable code —
+the 3-component architecture requires HTML parser + selector parser + matcher, which exceeded the
+30-minute limit). Mustache: strong oneshot (34/35) but aigent timed out and produced nothing (0/0).
+TinyLang aigent timed out and produced a partial implementation (35/43 vs 43/43 oneshot). Every
+aigent regression is a timeout — the longer, more structured prompt consistently pushed MiniMax
+over the time limit on the harder problems.
+
+### Nemotron 3 Super — 94 oneshot, 82 aigent (Δ−12)
+
+The weakest model by a significant margin. TinyLang is a hard ceiling for Nemotron: both approaches
+failed (0/0 oneshot timeout, killed aigent). Cron matcher aigent timed out completely (0/1) while
+oneshot succeeded in ~25 minutes. CSS selector: oneshot got 17/43 (partial) but aigent scored 0/43
+(compiled but fully wrong). Mustache is the one exception — Nemotron performed similarly in both
+approaches (22/35 oneshot, 23/35 aigent). The aigent prompt length consistently hurts Nemotron
+more than it helps.
+
+---
+
+## The Discriminating Problems
+
+### 11 — CSS Selector Engine
+
+The most architecturally complex problem: requires writing an HTML parser, a CSS selector parser,
+and a tree-walking matcher — roughly 400–600 lines of Java.
+
+| Model | Oneshot | Aigent | Observation |
+|---|:---:|:---:|----|
+| Claude 4.6 | 43/43 | 43/43 | Perfect both |
+| Big Pickle | 43/43 `[T]` | 41/43 `[T]` | Both timed out but generated working code |
+| MiMo Flash | 36/43 | 34/43 | Partial in both; aigent slightly worse |
+| MiniMax M2.5 | 0/0 `[T]` | 0/0 | Both timed out with no compilable output |
+| Nemotron 3 | 17/43 | 0/43 | Aigent compiled but produced all-wrong output |
+
+**Finding:** The limiting factor is model capability and time budget, not prompt structure. The
+detailed aigent spec (including the `:nth-child` An+B formula and combinator semantics) did not
+help any model that couldn't already build a CSS engine — and actively hurt Nemotron.
+
+### 12 — Mustache Renderer
+
+Mustache is a widely documented format with extensive training coverage. The aigent spec details
+the standalone-tag removal algorithm, the `0`-truthy/`""`-falsy rule, and HTML escape ordering.
+
+| Model | Oneshot | Aigent | Observation |
+|---|:---:|:---:|----|
+| Claude 4.6 | 35/35 | 35/35 | Perfect both |
+| Big Pickle | 21/35 `[T]` | 0/35 `[T]` | Aigent worse — implemented wrong algorithm |
+| MiMo Flash | 29/35 | 0/35 | Aigent overrode correct pre-trained knowledge |
+| MiniMax M2.5 | 34/35 `[T]` | 0/0 `[T]` | Aigent timed out; outstanding oneshot |
+| Nemotron 3 | 22/35 | 23/35 | Similar in both |
+
+**Finding:** Aigent catastrophically *hurt* 3 of 4 opencode models on Mustache. The detailed spec
+provided a step-by-step algorithmic description that the models followed literally — overriding
+their pre-existing (largely correct) Mustache knowledge and leading them to implement a broken
+custom parser. This is the clearest evidence that structured specs can interfere with model
+pre-training rather than augmenting it.
 
 ---
 
 ## Key Findings
 
-### 1. Aigent beats oneshot in aggregate for the first time
+**1. Strong models are already saturated.** Claude Sonnet 4.6 scored 100% in both approaches on
+all 12 problems. The structured spec adds zero signal.
 
-Summing ratings across all 5 models: **oneshot 330 · aigent 336**. This is the first round
-where the aigent approach outperforms the baseline in aggregate. The spec-to-prompt compiler
-is the cause: by extracting every `@Example` case as an explicit numbered test case, models
-receive a richer brief than any hand-written oneshot prompt.
+**2. Aigent can actively hurt on well-known specs.** Mustache is the most dramatic case: 3 of 4
+opencode models scored *worse* with aigent (combined score 14 aigent vs 34 oneshot on that problem
+alone). The longer a spec, the more likely it overrides correct pre-trained knowledge.
 
-### 2. Aigent rescued Big Pickle's Unified Diff
+**3. Aigent occasionally rescues a bad oneshot.** Big Pickle's Unified Diff (1/20 → 20/20) is the
+clearest rescue. But these wins are rare and are cancelled by the losses at scale.
 
-Big Pickle's oneshot Unified Diff result was **1/20** (model variance — it generated a
-non-functional skeleton). The aigent brief, listing all 7 concrete test cases with `in: → out:`
-notation, produced a correct implementation: **20/20**. Without aigent, Big Pickle would have
-scored 62/70 oneshot; aigent lifted it to 68/70.
+**4. Timeouts are a hidden cost.** The aigent prompt is materially longer than oneshot. For weaker
+models (MiniMax, Nemotron), this consistently pushed runs over the 30-minute limit — sometimes
+converting a partial result into a total failure.
 
-### 3. MiMo's aigent beat its oneshot on TinyLang
-
-MiMo V2 Flash scored 42/43 oneshot on TinyLang but **43/43 aigent** — and the aigent run
-was faster (3m26s vs 7m32s). The explicit enumeration of critical cases (right-associative `^`,
-short-circuit `&&`/`||`, `letrec` self-reference) in the aigent brief appeared to pre-empt
-the one failure that the oneshot prompt left ambiguous.
-
-### 4. TinyLang remains the ceiling for weaker models
-
-| Model | Oneshot | Aigent |
-|---|:---:|:---:|
-| Claude 4.6 | 43/43 | 43/43 |
-| MiniMax M2.5 | 43/43 | [T] 35/43 |
-| Big Pickle | 43/43 | [T] 41/43 |
-| MiMo Flash | 42/43 | **43/43** |
-| Nemotron 3 | [T] 0/0 | 0/0 |
-
-MiniMax and Big Pickle both timed out on TinyLang aigent — not because the prompt was bad,
-but because the model used its iteration time deeply (MiniMax: 35/43, Big Pickle: 41/43).
-The partial scores represent real progress: TinyLang is a ~300-line interpreter; getting
-35–41 of 43 tests right under a 30-minute ceiling is a strong result.
-
-### 5. MiMo's dramatic improvement (80 → 138)
-
-Round 4 MiMo was severely penalised by parallel-run API rate-limiting (three instant exits in
-~5s). Running sequentially this round, MiMo scored 138/140 — demonstrating its true capability.
-The single oneshot miss (TinyLang 42/43) and one SemVer aigent timeout (still 17/17) are minor.
-
-### 6. Nemotron's TinyLang wall
-
-Nemotron solved all 6 non-TinyLang problems perfectly (60/60) in both approaches. TinyLang
-oneshot timed out with no passing tests (implementation was non-functional at timeout); aigent
-was killed before running. The model consistently struggles with the recursive interpreter
-problem regardless of prompt style.
+**5. The ceiling is the model, not the prompt.** Nemotron could not solve TinyLang in either
+approach; neither Nemotron nor MiniMax could produce a working CSS selector engine regardless of
+how detailed the brief was. Model capability is the binding constraint.
 
 ---
 
-## Aigent Value Summary
+## Conclusion
 
-| Model | Aigent impact | Mechanism |
-|---|---|---|
-| Claude 4.6 | Neutral | Already maxed |
-| MiMo Flash | **+2** 🎉 | TinyLang 42→43; explicit test cases eliminated one ambiguous case |
-| Big Pickle | **+6** 🎉 | Unified Diff rescued (1/20→20/20); aigent brief listed all 7 hunks |
-| MiniMax M2.5 | −2 | TinyLang timeout; aigent 35/43 vs oneshot 43/43 |
-| Nemotron 3 Super | 0 | TinyLang blocked both approaches equally |
+> **One-shotting AI prompts is not worse than structured prompt engineering with requirements,
+> examples, and specifications — and with strong models it is often better.**
 
----
+After 120 runs across 12 problems and 5 models (542 oneshot points vs 512 aigent points), the
+structured aigent approach did not outperform the plain one-shot in aggregate. The model's
+pre-trained knowledge is frequently more reliable than a hand-crafted spec, and a shorter prompt
+leaves the model room to apply that knowledge without interference.
 
-## Round 4 → Round 5 Changes
-
-| Model | Round 4 | Round 5 | Δ | Cause |
-|---|---:|---:|---:|---|
-| Claude 4.6 | 140 | 140 | — | Stable |
-| MiniMax M2.5 | 128 | 138 | **+10** | Spec-to-prompt fixed TinyLang aigent (9→35); all 6 other problems now perfect |
-| MiMo V2 Flash | 80 | 138 | **+58** | Sequential run eliminated parallel API failures; spec-to-prompt made aigent = 70/70 |
-| Big Pickle | 140 | 130 | −10 | Unified Diff oneshot regression (model variance, 20→1); aigent compensated (+6 Δ) |
-| Nemotron 3 Super | 124 | 120 | −4 | TinyLang oneshot timeout yielded 0/0 vs Round 4's 42/43 partial; aigent killed |
-
-## Aggregate Trend
-
-| Round | Oneshot total | Aigent total | Aigent Δ |
-|---|---:|---:|---:|
-| Round 3 | — | — | −10 |
-| Round 4 | 314 | 296 | −18 |
-| **Round 5** | **330** | **336** | **+6 🎉** |
-
-The spec-to-prompt compiler reversed the aigent disadvantage. Aigent now leads oneshot
-by 6 points in aggregate — a 24-point swing from Round 4.
+The annotation framework (`@Intent`, `@Contract`, `@Example`, `@Property`) remains genuinely
+useful as **living documentation and runtime enforcement** — just not as a lever for extracting
+better code from a model that doesn't already know how to solve the problem.

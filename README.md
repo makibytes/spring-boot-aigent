@@ -74,32 +74,12 @@ Open this project in Claude Code and run:
 ```
 
 The AI finds every `@Stub`-annotated method, reads the spec, implements the body, removes
-`@Stub`, and adds an `@AiNote` with its confidence level and any open questions:
-
-```java
-@AiNote(
-    confidence = Confidence.HIGH,
-    assumed    = "All inputs are North American numbers requiring a +1 country code.",
-    open       = "Should already-E.164 inputs be returned unchanged? Currently they are."
-)
-public List<String> normalize(List<String> numbers) {
-    if (numbers == null) throw new NullPointerException("numbers must not be null");
-    return numbers.stream()
-        .map(n -> n.startsWith("+") ? n : "+1" + n.replaceAll("[^0-9]", ""))
-        .collect(java.util.stream.Collectors.toList());
-}
-```
+`@Stub`, and adds an `@AiNote` with its confidence level and any open questions.
 
 ### 5. Review and iterate
 
 Read the `@AiNote`. If you're satisfied, remove it — done. If something needs changing,
-refine the spec annotations and re-add `@Stub` with a note explaining what changed:
-
-```java
-@Stub("fix: already-E.164 inputs must be returned unchanged, not re-prefixed")
-```
-
-Run `/aigent` again. Repeat until the implementation is correct.
+refine the spec annotations and re-add `@Stub` with a note explaining what changed.
 
 ---
 
@@ -126,16 +106,14 @@ Run `/aigent` again. Repeat until the implementation is correct.
 
 ```java
 @Contract(
-    requires = "input != null",                          // precondition
-    ensures  = "$result.length() == input.length()",    // postcondition; $result = return value
-    throws_  = {IllegalArgumentException.class}         // thrown when requires is violated
+    requires = "input != null",
+    ensures  = "$result.length() == input.length()",
+    throws_  = {IllegalArgumentException.class}
 )
 ```
 
 `$result` binds to the return value in `ensures`. `$input` binds to the first parameter.
-Named parameters (e.g., `$divisor`, `$name`) are also available.
-Expressions use **SpEL (Spring Expression Language)** — they are evaluated at runtime by `ContractAspect`.
-The `$variable` syntax is automatically translated to SpEL's `#variable`.
+Expressions use **SpEL (Spring Expression Language)**, evaluated at runtime by `ContractAspect`.
 
 ---
 
@@ -151,130 +129,166 @@ You review: read implementation + @AiNote
             └─ Not quite?   refine spec + re-add @Stub("what to fix"). Loop.
 ```
 
-| What you see in the file | What it means |
+| What you see | What it means |
 |---|---|
 | `@Stub` present | AI's turn — method needs implementation |
 | `@AiNote` present, no `@Stub` | Your turn — review the implementation |
-| Neither present | Done — accepted or human-authored |
+| Neither | Done — accepted or human-authored |
 
 ---
 
 ## Startup Safety Net
 
-The starter automatically scans all Spring beans at startup for methods still carrying `@Stub`.
-By default it logs a warning. Configure the behavior in `application.properties`:
+The starter scans all Spring beans at startup for methods still carrying `@Stub`.
 
 ```properties
-# WARN  — log a warning and continue (default, good for development)
-aigent.on-stub=WARN
-
-# FAIL  — throw and abort startup (recommended for production)
-aigent.on-stub=FAIL
-
-# IGNORE — disable the scan entirely
-aigent.on-stub=IGNORE
+aigent.on-stub=WARN    # WARN (default) | FAIL | IGNORE
 ```
 
-Recommended pattern: set `aigent.on-stub=FAIL` in `application-prod.properties` so an
-unimplemented stub can never reach production.
+Recommended: set `aigent.on-stub=FAIL` in `application-prod.properties`.
 
 ---
 
 ## Runtime Contract Enforcement
 
-When `spring-boot-starter-aop` is on the classpath, the auto-configuration registers a
-`ContractAspect` that evaluates `@Contract` expressions at runtime:
-
-- **`requires`** is checked **before** the method executes — violations throw `PreconditionViolationException`
-- **`ensures`** is checked **after** the method returns, with `$result` bound — violations throw `PostconditionViolationException`
-- **MONITOR** mode logs violations with re-stub suggestions instead of throwing
+When `spring-boot-starter-aop` is on the classpath, `ContractAspect` evaluates `@Contract`
+expressions at runtime:
 
 ```properties
 aigent.contracts=ENFORCE    # ENFORCE (default) | MONITOR | OFF
-```
-
-`@Pure`-annotated methods are checked for accidental input mutation:
-
-```properties
 aigent.pure-check=true      # true (default) | false
 ```
 
-### Testing without Spring
-
-Use `ContractJUnitExtension` to enforce contracts in plain JUnit tests (no Spring context needed):
-
-```java
-class PhoneServiceTest {
-    ContractJUnitExtension contracts = new ContractJUnitExtension();
-    PhoneService service = contracts.wrap(new PhoneServiceImpl(), PhoneService.class);
-
-    @Test void rejectsNull() {
-        assertThrows(PreconditionViolationException.class, () -> service.normalize(null));
-    }
-}
-```
-
-`ExampleRunner` turns every `@Example` annotation into a runnable assertion:
-
-```java
-var runner = new ExampleRunner();
-List<ExampleResult> results = runner.runAll(new PhoneServiceImpl());
-// or extend AbstractExampleTest<PhoneService> for JUnit 5 integration
-```
-
 ---
 
-## Tips for Writing Good Specs
+## Benchmark: Does Structured Spec Engineering Beat One-Shotting?
 
-**`@Intent` is the north star.** Write it first, as if explaining to a colleague. The AI reads
-it before anything else. Ambiguous intent leads to ambiguous implementations.
+> **Short answer: not really — especially with strong models.**
 
-**`@Example` edge cases matter most.** The "happy path" is rarely where bugs hide. Add examples
-for empty collections, already-valid inputs, boundary values, and null-adjacent cases.
+We ran an extensive benchmark to measure whether structured, annotation-driven prompts
+(the "aigent" approach) produce better AI-generated code than a plain one-shot description.
 
-**`@Property` expresses what's always true.** Use it for invariants that examples can't fully
-cover: `"$result.size() == $input.size()"` or `"$result.stream().noneMatch(Objects::isNull)"`.
-The AI can turn these into property-based tests.
+### Setup
 
-**`@Contract.requires` is a promise, not a validator.** It says "the caller guarantees this."
-`throws_` says what happens if they break the promise. Together they tell the AI whether to
-add a guard clause or let the exception propagate naturally.
+- **12 problems** spanning algorithmic parsers, interpreters, and format processors
+- **5 models**: Claude Sonnet 4.6, MiniMax M2.5, Big Pickle, Nemotron 3 Super, MiMo V2 Flash
+- **2 approaches per problem per model**:
+  - **Oneshot** — a short, plain-language description of what to implement
+  - **Aigent** — a rich prompt compiled from `@Intent`, all `@Example` test cases, `@Contract`
+    rules, and `@Stub` implementation notes via `benchmark/spec-to-prompt.py`
 
-**`@Stub` value = targeted instruction.** On a re-implementation, put the specific change in
-the value: `@Stub("now must handle null elements in the list gracefully")`. The AI reads this
-as a constraint narrowing the spec.
+Problems range from classic algorithms (expression evaluator, SemVer comparator, CSV parser)
+through complex dev-tooling implementations (gitignore matcher, unified diff applier, TinyLang
+interpreter, TOML parser) to deliberately tricky problems designed to expose the gap between
+approaches (POSIX shell splitter, cron expression matcher, CSS selector engine, Mustache renderer).
 
-**Don't use `@Pure` on Spring beans.** `@Pure` means no side effects at all. Spring
-`@Service` and `@Component` methods have injected dependencies and are inherently stateful.
-Use `@Pure` only on static utility methods or helper methods with no external access.
+### Results
 
----
+| Model | Oneshot | Aigent | Aigent Δ |
+|---|---:|---:|---:|
+| Claude Sonnet 4.6 | 120/120 | 120/120 | `0` |
+| Big Pickle | 106/120 | 106/120 | `0` |
+| MiMo V2 Flash | 114/120 | 106/120 | `−8` |
+| MiniMax M2.5 | 108/120 | 98/120 | `−10` |
+| Nemotron 3 Super | 94/120 | 82/120 | `−12` |
 
-## Benchmark: Aigent vs One-Shot
+**Aggregate: oneshot 542 · aigent 512 — oneshot leads by 30 points.**
 
-We ran **5 models × 7 problems × 2 approaches = 70 runs** across the full problem set
-(3 classic + 4 complex dev-tooling problems) to measure whether executable specs improve
-AI-generated code quality. Models tested: Claude Sonnet 4.6, MiniMax M2.5, Big Pickle,
-Nemotron 3 Super, MiMo V2 Flash.
+Rating scale: 10 = all tests pass · 8 = ≤20% fail · 6 = ≤33% fail · 4 = ≤50% fail · 2 = any pass · 0 = none.
+`[T]` = hit the 30-minute timeout per run.
 
-| Model | Oneshot | Aigent | Total | Aigent Δ |
-|---|---:|---:|---:|---:|
-| **Claude Sonnet 4.6** | **70/70** | **70/70** | **140/140 (100%)** | `0` |
-| MiniMax M2.5 | **70/70** | 68/70 | **138/140 (99%)** | `−2` |
-| MiMo V2 Flash | 68/70 | **70/70** | **138/140 (99%)** | **`+2` 🎉** |
-| Big Pickle | 62/70 | **68/70** | **130/140 (93%)** | **`+6` 🎉** |
-| Nemotron 3 Super | 60/70 | 60/70 | **120/140 (86%)** | `0` |
+### What we found
 
-**Aggregate across all models: oneshot 330 · aigent 336 — aigent wins.**
+**Structured prompt engineering does not reliably beat one-shotting**, even on problems
+specifically designed to reward careful spec reading. Across 12 problems and 5 models, the
+oneshot approach outperformed aigent in aggregate. Several patterns stood out:
 
-The spec-to-prompt compiler (`spec-to-prompt.py`) generates a richer implementation brief
-from the spec annotations than any hand-written oneshot prompt: every `@Example` becomes an
-explicit numbered test case, `@Contract` becomes clear pre/postcondition rules, and `@Stub`
-becomes implementation notes. Big Pickle's Unified Diff went from 1/20 (oneshot) to 20/20
-(aigent); MiMo's TinyLang went from 42/43 to 43/43.
+**1. Strong models are already saturated.** Claude Sonnet 4.6 scored 100% in both approaches
+on all 12 problems. The structured spec adds no signal when the model already possesses the
+knowledge needed to implement correctly from a short description.
 
-> See the full results with per-model tables, failure analysis, and timing data:
+**2. Aigent can hurt on well-known specs.** For Mustache rendering — a widely documented
+format with extensive online coverage — 3 of 4 opencode models scored *worse* with the aigent
+prompt than with oneshot. The detailed specification overrode the models' pre-existing (largely
+correct) knowledge with a complex algorithmic description that led them astray. MiniMax went
+from 34/35 oneshot to 0 compilable tests aigent (timeout); MiMo from 29/35 to 0/35.
+
+**3. Aigent occasionally rescues a bad oneshot.** Big Pickle's Unified Diff applier scored
+1/20 oneshot and 20/20 aigent. MiMo's TinyLang went from 42/43 to 43/43. These wins exist,
+but they are outnumbered by the losses at scale.
+
+**4. Timeouts are a hidden cost.** Even when aigent produced the same test scores, it
+frequently took longer — sometimes hitting the 30-minute ceiling with a slightly worse result
+than oneshot completed in minutes. Additional prompt length increases iteration time without
+proportional quality gain.
+
+**5. The ceiling is the model, not the prompt.** Nemotron could not solve TinyLang in either
+approach; neither Nemotron nor MiniMax could produce a working CSS selector engine regardless
+of how detailed the brief was. The limiting factor is model capability, not prompt structure.
+
+### Conclusion
+
+This project set out to test whether codifying requirements as executable annotations and
+compiling them into rich implementation prompts would systematically improve AI-generated code
+quality. After 120 runs across 12 problems and 5 models (542 oneshot points vs 512 aigent points), the evidence points the other way:
+
+> **One-shotting AI prompts is not worse than structured prompt engineering with
+> requirements, examples, and specifications — and with strong models it is often better.**
+
+The model's pre-trained knowledge is frequently more reliable than a hand-crafted spec, and a
+shorter prompt leaves the model room to apply that knowledge without interference. The annotation
+framework (`@Intent`, `@Contract`, `@Example`, `@Property`) remains genuinely useful as
+**living documentation and runtime enforcement** — just not as a lever for extracting
+better code from a model that doesn't already know how to solve the problem.
+
+> Full per-problem tables, per-model breakdowns, failure analysis, and timing data:
 > **[benchmark/results/results.md](benchmark/results/results.md)**
+
+---
+
+## Running the Benchmark Yourself
+
+```bash
+cd benchmark
+
+# All models, all 12 problems, both approaches
+./run-benchmark.sh
+
+# One model only
+./run-benchmark.sh claude-sonnet-4-6
+
+# One model, one approach
+./run-benchmark.sh claude-sonnet-4-6 oneshot
+
+# One model, one approach, one problem
+./run-benchmark.sh claude-sonnet-4-6 oneshot 11-css-selector
+
+# Run models in parallel, then merge per-model CSVs
+./run-benchmark.sh claude-sonnet-4-6 &
+./run-benchmark.sh opencode/big-pickle &
+wait
+./run-benchmark.sh --merge
+```
+
+Registered models (requires the respective CLI tool installed and authenticated):
+
+| Model ID | CLI |
+|---|---|
+| `claude-sonnet-4-6` | `claude` (Claude Code) |
+| `opencode/minimax-m2.5-free` | `opencode` |
+| `opencode/big-pickle` | `opencode` |
+| `opencode/nemotron-3-super-free` | `opencode` |
+| `opencode/mimo-v2-flash-free` | `opencode` |
+
+Each problem directory under `benchmark/` contains:
+
+- `<Interface>.java` — the interface to implement (never modified by the model)
+- `<Interface>Test.java` — the authoritative JUnit 5 test suite (never modified by the model)
+- `oneshot/prompt.txt` — the plain-language prompt used for the oneshot approach
+- `aigent/spec.java` — the annotated spec compiled into the aigent prompt by `spec-to-prompt.py`
+
+Per-run timeout: 30 minutes (override with `MODEL_TIMEOUT=600 ./run-benchmark.sh`).
+Results accumulate in `benchmark/results/raw-<model>.csv`; merge with `--merge`.
 
 ---
 
@@ -299,4 +313,24 @@ src/main/java/de/makibytes/aigent/
     ├── AbstractExampleTest.java            JUnit 5 base class
     ├── ContractJUnitExtension.java         proxy-based contract enforcement (no Spring)
     └── PropertyVerifier.java               verifies @Property invariants against samples
+
+benchmark/
+├── run-benchmark.sh                        runner (all models × problems × approaches)
+├── spec-to-prompt.py                       compiles aigent spec.java → implementation prompt
+├── pom-template.xml                        Maven project template for each run directory
+├── 01-expression-evaluator/              ┐
+├── 02-semver-comparator/                  │
+├── 03-csv-parser/                         │
+├── 04-dependency-resolver/                │  12 problems, each containing:
+├── 05-gitignore-matcher/                  │  - <Interface>.java
+├── 06-unified-diff-applier/               │  - <Interface>Test.java
+├── 07-tinylang-interpreter/               │  - oneshot/prompt.txt
+├── 08-shell-splitter/                     │  - aigent/spec.java
+├── 09-cron-matcher/                       │
+├── 10-toml-parser/                        │
+├── 11-css-selector/                       │
+├── 12-mustache-renderer/                 ┘
+└── results/
+    ├── results.md                          full benchmark findings and analysis
+    └── raw.csv                             merged results (model, problem, approach, scores)
 ```

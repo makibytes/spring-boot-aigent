@@ -141,7 +141,7 @@ def find_annotations(src, name):
 
 def extract_method_sig(src):
     """Return (return_type, method_name, params_str) for the @Stub method."""
-    m = re.search(r'public\s+(\S+)\s+(\w+)\s*\(([^)]*)\)\s*(?:throws\s+\S+\s*)?\{', src)
+    m = re.search(r'public\s+(.*?)\s+(\w+)\s*\(([^)]*)\)\s*(?:throws\s+\S+\s*)?\{', src)
     if m: return m.group(1), m.group(2), m.group(3).strip()
     return None, None, None
 

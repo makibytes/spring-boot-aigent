@@ -1,0 +1,18 @@
+Implement a Java class called MustacheRendererImpl in package de.makibytes.benchmark.mustache
+that implements the following interface:
+
+    public interface MustacheRenderer {
+        String render(String template, Map<String, Object> context);
+    }
+
+Implement a Mustache template renderer. Support:
+  - {{name}}        variable interpolation with HTML escaping (&, <, >, ")
+  - {{{name}}}      unescaped variable
+  - {{&name}}       unescaped variable
+  - {{#name}}...{{/name}}  section (falsy=skip; list=iterate; map=context; other=render once)
+  - {{^name}}...{{/name}}  inverted section (renders when falsy)
+  - {{! comment }}  comment (no output)
+  - Dot notation {{a.b}} for nested lookup
+  - {{.}} current context in iterations
+
+Output only the complete Java source file. No explanation.

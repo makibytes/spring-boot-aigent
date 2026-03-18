@@ -1,0 +1,15 @@
+Implement a Java class called TomlParserImpl in package de.makibytes.benchmark.toml
+that implements the following interface:
+
+    public interface TomlParser {
+        Map<String, Object> parse(String toml);
+        class ParseException extends RuntimeException {
+            public ParseException(String message) { super(message); }
+        }
+    }
+
+The parse method should parse a TOML document and return it as a nested Map.
+TOML integers map to Long, floats to Double, booleans to Boolean,
+strings to String, arrays to List<Object>, and tables to Map<String, Object>.
+
+Output only the complete Java source file. No explanation.
